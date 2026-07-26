@@ -1,0 +1,31 @@
+spring:
+  application:
+    name: travel-ai
+
+  datasource:
+    url: jdbc:postgresql://localhost:5434/travel
+    username: postgres
+    password: password
+
+  ai:
+    openai:
+      api-key: ${OPENAI_API_KEY}
+
+    google:
+      genai:
+        api-key: ${GEMINI_API_KEY}
+        vertex-ai: false
+        chat:
+          model: gemini-flash-latest
+        embedding:
+          api-key: ${GEMINI_API_KEY}
+          vertex-ai: false
+          text:
+            model: gemini-embedding-001
+            dimensions: 1536
+
+    vectorstore:
+      pgvector:
+        initialize-schema: true
+        dimensions: 1536
+
