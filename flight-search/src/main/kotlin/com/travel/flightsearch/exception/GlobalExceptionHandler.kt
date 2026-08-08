@@ -1,5 +1,7 @@
 package com.travel.flightsearch.exception
 
+import com.travel.common.exception.BookingException
+import com.travel.common.exception.BookingFailureReason
 import com.travel.common.exception.ExternalApiException
 import com.travel.common.exception.ValidationException
 import org.springframework.http.HttpStatus
@@ -68,6 +70,27 @@ class GlobalExceptionHandler {
                     message = "No resource found at this path",
                 ),
             )
+
+    @ExceptionHandler(BookingException::class)
+    fun handleBooking(ex: BookingException): ResponseEntity<ApiErrorResponse> {
+        val status =
+            when (ex.reason) {
+                BookingFailureReason.OFFER_EXPIRED -> HttpStatus.CONFLICT
+                BookingFailureReason.VALIDATION_FAILED -> HttpStatus.UNPROCESSABLE_ENTITY
+                BookingFailureReason.PAYMENT_DECLINED -> HttpStatus.PAYMENT_REQUIRED
+                BookingFailureReason.UNKNOWN -> HttpStatus.BAD_GATEWAY
+            }
+        return ResponseEntity
+            .status(status)
+            .body(
+                ApiErrorResponse(
+                    status = status.value(),
+                    error = "Booking Failed",
+                    message = ex.message ?: "The booking could not be completed",
+                    details = ex.fieldErrors.map { (field, error) -> "$field: $error" },
+                ),
+            )
+    }
 
     @ExceptionHandler(ExternalApiException::class)
     fun handleExternalApi(ex: ExternalApiException): ResponseEntity<ApiErrorResponse> =

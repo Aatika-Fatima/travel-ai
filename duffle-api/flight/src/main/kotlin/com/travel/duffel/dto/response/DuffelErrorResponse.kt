@@ -13,4 +13,11 @@ data class DuffelError(
     val title: String? = null,
     val message: String? = null,
     val code: String? = null,
+    val source: DuffelErrorSource? = null,
+)
+
+@JsonIgnoreProperties(ignoreUnknown = true)
+data class DuffelErrorSource(
+    val field: String? = null,
+    val pointer: String? = null,
 )
