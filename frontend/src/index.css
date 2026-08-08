@@ -1,0 +1,30 @@
+@import "tailwindcss";
+
+@theme {
+  --color-brand-950: #0a0c33;
+  --color-brand-900: #0f1245;
+  --color-brand-800: #171b5c;
+  --color-brand-700: #232875;
+  --color-brand-100: #e8e9f7;
+  --color-brand-50: #f4f4fc;
+
+  --color-accent-600: #c2143d;
+  --color-accent-500: #e01f4c;
+  --color-accent-400: #ec4a71;
+  --color-accent-50: #fdecf0;
+
+  --font-sans: "Inter", "Segoe UI", system-ui, -apple-system, sans-serif;
+}
+
+html {
+  font-family: var(--font-sans);
+}
+
+/* Slim, brand-colored scrollbars for the filter panel */
+.scroll-thin::-webkit-scrollbar {
+  width: 6px;
+}
+.scroll-thin::-webkit-scrollbar-thumb {
+  background-color: var(--color-brand-100);
+  border-radius: 9999px;
+}

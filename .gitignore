@@ -35,3 +35,11 @@ build/
 
 ### VS Code ###
 .vscode/
+
+### Frontend ###
+node_modules/
+frontend/node/
+flight-search/src/main/resources/static/
+
+### App (excluded from commits) ###
+travel-ai-app/

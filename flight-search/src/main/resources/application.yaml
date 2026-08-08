@@ -1,0 +1,12 @@
+server:
+  port: 8090
+
+spring:
+  application:
+    name: flight-search
+
+duffel:
+  api-key: ${DUFFEL_API_KEY}
+  base-url: https://api.duffel.com
+  version: v2
+  timeout-ms: 10000
