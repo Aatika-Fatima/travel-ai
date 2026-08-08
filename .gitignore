@@ -43,3 +43,8 @@ flight-search/src/main/resources/static/
 
 ### App (excluded from commits) ###
 travel-ai-app/
+
+### Spec/prompt docs (excluded from commits) ###
+.claude/duffel_airport.md
+.claude/duffel_booking.md
+.claude/flight-search-prompt.md
