@@ -12,7 +12,7 @@
     <artifactId>frontend</artifactId>
     <packaging>pom</packaging>
     <name>frontend</name>
-    <description>React + Tailwind SPA for flight-search, built into flight-search's static resources</description>
+    <description>React + Tailwind SPA for search-service, built into the app module's static resources</description>
 
     <build>
         <plugins>

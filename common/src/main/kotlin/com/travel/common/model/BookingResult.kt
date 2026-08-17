@@ -8,6 +8,7 @@ data class BookingResult(
     val totalAmount: Money,
     val eTicketNumbers: List<String> = emptyList(),
     val passengers: List<BookedPassenger> = emptyList(),
+    val emails: List<String>,
 )
 
 data class BookedPassenger(

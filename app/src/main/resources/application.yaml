@@ -1,0 +1,70 @@
+server:
+  port: 8090
+
+spring:
+  application:
+    name: search-service
+  ai:
+    mistralai:
+      api-key: ${MISTRAL_API_KEY}
+      chat:
+        model: mistral-small-latest
+  elasticsearch:
+    uris: ${ELASTICSEARCH_URIS:http://localhost:9200}
+    connection-timeout: 2s
+    socket-timeout: 5s
+  datasource:
+    url: jdbc:postgresql://localhost:5434/travel
+    username: postgres
+    password: password
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
+  flyway:
+    baseline-on-migrate: true
+    baseline-version: "0"
+  # Redis cache
+  cache:
+    type: redis
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+    consumer:
+      group-id: notification-service
+      auto-offset-reset: earliest
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.apache.kafka.common.serialization.StringSerializer
+  mail:
+    host: ${MAIL_HOST:localhost}
+    port: ${MAIL_PORT:1025}
+    properties:
+      mail:
+        smtp:
+          auth: "false"
+          starttls:
+            enable: "false"
+
+duffel:
+  api-key: ${DUFFEL_API_KEY}
+  base-url: https://api.duffel.com
+  version: v2
+  timeout-ms: 10000
+  airports:
+    sync:
+      enabled: true
+      cron: "0 0 3 ? * MON"
+
+# AirportCacheProperties - both have defaults, override only if needed
+airports:
+  cache:
+    ttl: 24h
+    key-prefix: "airport-search::"
+    search:
+      elasticsearch-enabled: true

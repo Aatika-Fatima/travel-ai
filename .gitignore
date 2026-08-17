@@ -39,12 +39,16 @@ build/
 ### Frontend ###
 node_modules/
 frontend/node/
-flight-search/src/main/resources/static/
-
-### App (excluded from commits) ###
-travel-ai-app/
+app/src/main/resources/static/
 
 ### Spec/prompt docs (excluded from commits) ###
-.claude/duffel_airport.md
-.claude/duffel_booking.md
-.claude/flight-search-prompt.md
+.claude/*.md
+.claude/maven_module.md
+.claude/docs/*
+*.md
+
+### interactive guide *.html ###
+docs/*
+
+### log files ###
+*.log

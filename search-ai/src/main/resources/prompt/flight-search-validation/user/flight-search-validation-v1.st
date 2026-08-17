@@ -1,0 +1,3 @@
+### EXTRACTED INTENT TO VALIDATE
+
+{userMessage}

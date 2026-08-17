@@ -1,3 +1,9 @@
+export async function searchAirports(query) {
+  const res = await fetch(`/api/v1/airports/search?q=${encodeURIComponent(query)}`)
+  if (!res.ok) return []
+  return res.json()
+}
+
 export async function searchFlights(request) {
   const res = await fetch('/api/v1/flights/search', {
     method: 'POST',

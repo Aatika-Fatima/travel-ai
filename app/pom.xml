@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://maven.apache.org/POM/4.0.0"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <parent>
+        <groupId>com.travel</groupId>
+        <artifactId>travel-ai</artifactId>
+        <version>0.0.1-SNAPSHOT</version>
+        <relativePath>../pom.xml</relativePath>
+    </parent>
+
+    <artifactId>app</artifactId>
+    <packaging>jar</packaging>
+    <name>app</name>
+    <description>
+        Assembles the flight and search-service modules into one runnable Spring
+        Boot process and owns the environment-level application.yaml. Contains
+        no business logic of its own - only the main class, cross-module
+        wiring, and the cross-module ArchUnit boundary test (the only place
+        with every module's classes on one classpath).
+    </description>
+
+    <dependencies>
+        <dependency>
+            <groupId>com.travel</groupId>
+            <artifactId>common</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.travel</groupId>
+            <artifactId>flight</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.travel</groupId>
+            <artifactId>search-service</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.travel</groupId>
+            <artifactId>search-ai</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.travel</groupId>
+            <artifactId>notification</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.travel</groupId>
+            <artifactId>payment-service</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.jetbrains.kotlin</groupId>
+            <artifactId>kotlin-reflect</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.jetbrains.kotlin</groupId>
+            <artifactId>kotlin-stdlib</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-devtools</artifactId>
+            <scope>runtime</scope>
+            <optional>true</optional>
+        </dependency>
+        <dependency>
+            <groupId>com.tngtech.archunit</groupId>
+            <artifactId>archunit-junit5</artifactId>
+            <version>1.3.0</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-webmvc-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.jetbrains.kotlin</groupId>
+            <artifactId>kotlin-test-junit5</artifactId>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-maven-plugin</artifactId>
+            </plugin>
+        </plugins>
+    </build>
+
+</project>

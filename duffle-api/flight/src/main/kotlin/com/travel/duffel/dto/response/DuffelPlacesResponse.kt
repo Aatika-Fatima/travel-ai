@@ -1,8 +1,0 @@
-package com.travel.duffel.dto.response
-
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties
-
-@JsonIgnoreProperties(ignoreUnknown = true)
-data class DuffelPlacesResponse(
-    val data: List<DuffelPlace> = emptyList(),
-)

@@ -1,0 +1,12 @@
+prompts:
+  active-versions:
+    flight-search: flight-search-v1
+    flight-search-validation: flight-search-validation-v1
+
+# PromptCacheProperties — rendered system+business layers are cheap to recompute,
+# so a short TTL is fine; it just smooths repeated calls within the same prompt version.
+  cache:
+    ttl: 10m
+    key-prefix: "prompt-render::"
+    history-ttl: 2h
+    history-key-prefix: "assistant-history::"

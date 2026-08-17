@@ -21,8 +21,6 @@ data class BookingRequest(
 
 data class PassengerDetails(
     @field:NotBlank
-    val offerPassengerId: String,
-    @field:NotBlank
     val title: String,
     @field:NotBlank
     val givenName: String,
