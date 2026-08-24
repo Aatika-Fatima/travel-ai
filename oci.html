@@ -1,0 +1,821 @@
+<title>Travel-AI on OCI</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700&family=Source+Sans+3:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #eef0ed;
+    --surface: #ffffff;
+    --surface-2: #e3e8e2;
+    --text: #182019;
+    --text-dim: #56604f;
+    --accent: #a2521f;
+    --accent-soft: #f0ded0;
+    --accent-2: #2c6f5d;
+    --line: #d2d8cd;
+    --code-bg: #171d17;
+    --code-text: #dfe6de;
+    --code-dim: #8b9a87;
+    --code-key: #e0a45f;
+    --warn-bg: #f7e6cf;
+    --warn-text: #6b4413;
+    --warn-line: #d9a860;
+    --shadow: 0 1px 2px rgba(24,32,25,0.06), 0 8px 24px rgba(24,32,25,0.05);
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #10140f;
+      --surface: #171d17;
+      --surface-2: #1d241b;
+      --text: #e7ece5;
+      --text-dim: #9aa695;
+      --accent: #e08a4f;
+      --accent-soft: #33291d;
+      --accent-2: #63b39c;
+      --line: #2a322a;
+      --code-bg: #0c0f0c;
+      --code-text: #dbe3d9;
+      --code-dim: #798774;
+      --code-key: #e6ac6b;
+      --warn-bg: #2e2312;
+      --warn-text: #f0c890;
+      --warn-line: #6b4d20;
+      --shadow: 0 1px 2px rgba(0,0,0,0.3), 0 8px 24px rgba(0,0,0,0.25);
+    }
+  }
+
+  :root[data-theme="dark"] {
+    --bg: #10140f;
+    --surface: #171d17;
+    --surface-2: #1d241b;
+    --text: #e7ece5;
+    --text-dim: #9aa695;
+    --accent: #e08a4f;
+    --accent-soft: #33291d;
+    --accent-2: #63b39c;
+    --line: #2a322a;
+    --code-bg: #0c0f0c;
+    --code-text: #dbe3d9;
+    --code-dim: #798774;
+    --code-key: #e6ac6b;
+    --warn-bg: #2e2312;
+    --warn-text: #f0c890;
+    --warn-line: #6b4d20;
+    --shadow: 0 1px 2px rgba(0,0,0,0.3), 0 8px 24px rgba(0,0,0,0.25);
+  }
+
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: "Source Sans 3", ui-sans-serif, system-ui, sans-serif;
+    font-size: 16px;
+    line-height: 1.65;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    html { scroll-behavior: auto; }
+    * { transition: none !important; animation: none !important; }
+  }
+
+  h1, h2, h3 { font-family: "Sora", ui-sans-serif, system-ui, sans-serif; text-wrap: balance; letter-spacing: -0.01em; }
+
+  .page {
+    display: grid;
+    grid-template-columns: 260px minmax(0, 1fr);
+    max-width: 1180px;
+    margin: 0 auto;
+    gap: 0;
+  }
+
+  /* ---- rail ---- */
+  .rail {
+    position: sticky;
+    top: 0;
+    align-self: start;
+    height: 100vh;
+    overflow-y: auto;
+    padding: 2rem 1.25rem 2rem 2rem;
+    border-right: 1px solid var(--line);
+  }
+  .rail-brand {
+    font-family: "Sora", sans-serif;
+    font-weight: 700;
+    font-size: 0.95rem;
+    color: var(--text);
+    margin-bottom: 0.15rem;
+  }
+  .rail-brand span { color: var(--accent); }
+  .rail-sub {
+    font-size: 0.78rem;
+    color: var(--text-dim);
+    margin-bottom: 1.75rem;
+  }
+  .rail nav { display: flex; flex-direction: column; gap: 0.15rem; }
+  .rail a {
+    display: flex;
+    gap: 0.6rem;
+    align-items: baseline;
+    text-decoration: none;
+    color: var(--text-dim);
+    font-size: 0.86rem;
+    padding: 0.4rem 0.5rem;
+    border-radius: 6px;
+    transition: background 0.15s ease, color 0.15s ease;
+  }
+  .rail a .n {
+    font-family: "JetBrains Mono", monospace;
+    font-size: 0.72rem;
+    color: var(--text-dim);
+    opacity: 0.7;
+    min-width: 1.3em;
+  }
+  .rail a:hover { background: var(--surface-2); color: var(--text); }
+  .rail a.active { background: var(--accent-soft); color: var(--accent); font-weight: 600; }
+  .rail a.active .n { color: var(--accent); opacity: 1; }
+
+  /* ---- main ---- */
+  main { padding: 2.5rem 2.5rem 6rem; min-width: 0; }
+
+  .masthead { max-width: 700px; margin-bottom: 3rem; }
+  .eyebrow {
+    font-family: "JetBrains Mono", monospace;
+    font-size: 0.78rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--accent-2);
+    margin-bottom: 0.9rem;
+  }
+  h1 { font-size: 2.35rem; font-weight: 700; margin: 0 0 0.7rem; }
+  .dek { color: var(--text-dim); font-size: 1.08rem; max-width: 62ch; margin: 0 0 1.75rem; }
+
+  .stack-strip {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-bottom: 0.25rem;
+  }
+  .chip {
+    font-family: "JetBrains Mono", monospace;
+    font-size: 0.76rem;
+    background: var(--surface-2);
+    border: 1px solid var(--line);
+    color: var(--text-dim);
+    padding: 0.28rem 0.6rem;
+    border-radius: 999px;
+  }
+
+  .diagram {
+    margin-top: 2rem;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    padding: 1.5rem;
+    box-shadow: var(--shadow);
+  }
+  .diagram-row { display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap; }
+  .diagram-row + .diagram-row { margin-top: 0.9rem; }
+  .box {
+    font-family: "JetBrains Mono", monospace;
+    font-size: 0.8rem;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 0.55rem 0.8rem;
+    background: var(--bg);
+    white-space: nowrap;
+  }
+  .box.accent { border-color: var(--accent); color: var(--accent); }
+  .box.dim { color: var(--text-dim); }
+  .arrow { color: var(--text-dim); font-size: 1rem; }
+  .diagram-cluster {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    padding: 0.7rem;
+    border: 1px dashed var(--line);
+    border-radius: 10px;
+  }
+  .diagram-label { font-size: 0.72rem; color: var(--text-dim); margin-bottom: 0.4rem; text-transform: uppercase; letter-spacing: 0.06em; }
+
+  section.phase {
+    max-width: 700px;
+    padding-top: 3rem;
+    border-top: 1px solid var(--line);
+    margin-top: 3rem;
+    scroll-margin-top: 1.5rem;
+  }
+  section.phase:first-of-type { border-top: none; margin-top: 0; padding-top: 0; }
+
+  .phase-head { display: flex; align-items: baseline; gap: 0.9rem; margin-bottom: 0.6rem; }
+  .phase-num {
+    font-family: "JetBrains Mono", monospace;
+    font-size: 1rem;
+    color: var(--accent);
+    background: var(--accent-soft);
+    border-radius: 7px;
+    padding: 0.15rem 0.55rem;
+    flex-shrink: 0;
+  }
+  h2 { font-size: 1.5rem; font-weight: 700; margin: 0; }
+  .phase-why { color: var(--text-dim); font-size: 0.96rem; margin: 0.4rem 0 1.3rem; }
+
+  h3 { font-size: 1.05rem; font-weight: 600; margin: 1.6rem 0 0.6rem; }
+  p { margin: 0 0 1rem; }
+  ul, ol { padding-left: 1.3rem; margin: 0 0 1.1rem; }
+  li { margin-bottom: 0.4rem; }
+  strong { color: var(--text); }
+  code.inline {
+    font-family: "JetBrains Mono", monospace;
+    font-size: 0.86em;
+    background: var(--surface-2);
+    border: 1px solid var(--line);
+    padding: 0.1em 0.4em;
+    border-radius: 5px;
+  }
+  a.ext { color: var(--accent-2); }
+
+  .callout {
+    background: var(--warn-bg);
+    border: 1px solid var(--warn-line);
+    color: var(--warn-text);
+    border-radius: 10px;
+    padding: 0.9rem 1.1rem;
+    font-size: 0.92rem;
+    margin: 1.2rem 0;
+  }
+  .callout strong { color: inherit; }
+
+  .code-block {
+    position: relative;
+    background: var(--code-bg);
+    border-radius: 10px;
+    margin: 1rem 0 1.4rem;
+    overflow: hidden;
+    box-shadow: var(--shadow);
+  }
+  .code-block .label {
+    font-family: "JetBrains Mono", monospace;
+    font-size: 0.72rem;
+    color: var(--code-dim);
+    padding: 0.55rem 1rem 0;
+  }
+  .code-block pre {
+    margin: 0;
+    padding: 0.9rem 1rem 1.1rem;
+    overflow-x: auto;
+  }
+  .code-block code {
+    font-family: "JetBrains Mono", monospace;
+    font-size: 0.84rem;
+    line-height: 1.55;
+    color: var(--code-text);
+    white-space: pre;
+  }
+  .copy-btn {
+    position: absolute;
+    top: 0.5rem;
+    right: 0.6rem;
+    font-family: "JetBrains Mono", monospace;
+    font-size: 0.68rem;
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+    color: var(--code-dim);
+    background: transparent;
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    padding: 0.25rem 0.55rem;
+    cursor: pointer;
+  }
+  .copy-btn:hover { color: var(--code-text); border-color: var(--code-dim); }
+  .copy-btn:focus-visible, a:focus-visible, .rail a:focus-visible {
+    outline: 2px solid var(--accent-2);
+    outline-offset: 2px;
+  }
+
+  table { width: 100%; border-collapse: collapse; margin: 1rem 0 1.4rem; font-size: 0.92rem; }
+  thead th {
+    text-align: left;
+    font-family: "JetBrains Mono", monospace;
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--text-dim);
+    border-bottom: 1px solid var(--line);
+    padding: 0.5rem 0.7rem;
+  }
+  tbody td {
+    padding: 0.55rem 0.7rem;
+    border-bottom: 1px solid var(--line);
+    vertical-align: top;
+  }
+  tbody code.inline { white-space: nowrap; }
+
+  .done-list { list-style: none; padding: 0; }
+  .done-list li {
+    display: flex;
+    gap: 0.6rem;
+    padding: 0.5rem 0;
+    border-bottom: 1px solid var(--line);
+  }
+  .done-list li:last-child { border-bottom: none; }
+  .done-list .mark { color: var(--accent-2); font-family: "JetBrains Mono", monospace; flex-shrink: 0; }
+
+  footer {
+    max-width: 700px;
+    margin-top: 3.5rem;
+    padding-top: 2rem;
+    border-top: 1px solid var(--line);
+    color: var(--text-dim);
+    font-size: 0.85rem;
+  }
+
+  @media (max-width: 880px) {
+    .page { grid-template-columns: 1fr; }
+    .rail { position: static; height: auto; border-right: none; border-bottom: 1px solid var(--line); padding: 1.5rem; }
+    main { padding: 2rem 1.25rem 4rem; }
+  }
+</style>
+
+<div class="page">
+  <aside class="rail">
+    <div class="rail-brand">travel-ai <span>&rarr; OCI</span></div>
+    <div class="rail-sub">Always Free deployment guide</div>
+    <nav id="railnav">
+      <a href="#phase-0"><span class="n">00</span>What you're shipping</a>
+      <a href="#phase-1"><span class="n">01</span>Create the account</a>
+      <a href="#phase-2"><span class="n">02</span>Set a safety net</a>
+      <a href="#phase-3"><span class="n">03</span>Open the network</a>
+      <a href="#phase-4"><span class="n">04</span>Launch the A1 instance</a>
+      <a href="#phase-5"><span class="n">05</span>Prepare the box</a>
+      <a href="#phase-6"><span class="n">06</span>Pull the code down</a>
+      <a href="#phase-7"><span class="n">07</span>Containerize it</a>
+      <a href="#phase-8"><span class="n">08</span>Compose the stack</a>
+      <a href="#phase-9"><span class="n">09</span>First boot</a>
+      <a href="#phase-10"><span class="n">10</span>A real front door</a>
+      <a href="#phase-11"><span class="n">11</span>Survive a reboot</a>
+      <a href="#phase-12"><span class="n">12</span>Guardrails &amp; teardown</a>
+    </nav>
+  </aside>
+
+  <main>
+    <div class="masthead">
+      <div class="eyebrow">Deployment guide</div>
+      <h1>Travel-AI on Oracle Cloud, for free</h1>
+      <p class="dek">Everything from clicking "Sign up" on Oracle Cloud to a live, publicly reachable instance of this repo's <code class="inline">app</code> module — running on OCI's Always Free tier, with no expiry date and no card charge as long as you stay inside it.</p>
+      <div class="stack-strip">
+        <span class="chip">Spring Boot 4.1 / Kotlin</span>
+        <span class="chip">Java 25</span>
+        <span class="chip">React + Vite (embedded)</span>
+        <span class="chip">Postgres</span>
+        <span class="chip">Elasticsearch</span>
+        <span class="chip">Redis</span>
+        <span class="chip">Kafka</span>
+      </div>
+
+      <div class="diagram">
+        <div class="diagram-label">what you'll end up with — one Ampere A1 VM</div>
+        <div class="diagram-row">
+          <div class="box dim">browser</div>
+          <div class="arrow">&rarr;</div>
+          <div class="box accent">Caddy :443</div>
+          <div class="arrow">&rarr;</div>
+          <div class="box">app.jar :8090</div>
+          <div class="arrow">&rarr;</div>
+          <div class="diagram-cluster">
+            <div class="box dim">postgres</div>
+            <div class="box dim">redis</div>
+            <div class="box dim">elasticsearch</div>
+            <div class="box dim">kafka</div>
+            <div class="box dim">mailpit</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- PHASE 0 -->
+    <section class="phase" id="phase-0">
+      <div class="phase-head"><h2>What you're actually shipping</h2></div>
+      <p>This repo builds down to <strong>one runnable jar</strong>: the <code class="inline">app</code> module pulls in every other module (<code class="inline">common</code>, <code class="inline">duffle-api</code>, <code class="inline">search-service</code>, <code class="inline">search-ai</code>, <code class="inline">notification</code>, <code class="inline">payment-service</code>, <code class="inline">booking-service</code>) and the React SPA in <code class="inline">frontend</code> is built by Vite straight into <code class="inline">app/src/main/resources/static</code>, so the jar serves API and UI from one origin on port <code class="inline">8090</code>. There's no existing <code class="inline">Dockerfile</code> or <code class="inline">docker-compose.yml</code> in the repo yet — this guide has you write both.</p>
+      <p>At runtime the app needs, all reachable from wherever it runs:</p>
+      <table>
+        <thead><tr><th>Dependency</th><th>Used by</th><th>Has a default?</th></tr></thead>
+        <tbody>
+          <tr><td>PostgreSQL</td><td>Every module (shared <code class="inline">travel</code> DB, Flyway-migrated)</td><td>No &mdash; hardcoded to <code class="inline">localhost:5434</code></td></tr>
+          <tr><td>Elasticsearch</td><td>Airport / flight search</td><td>Yes, <code class="inline">localhost:9200</code></td></tr>
+          <tr><td>Redis</td><td>Caching, payment-service</td><td>Yes, <code class="inline">localhost:6379</code></td></tr>
+          <tr><td>Kafka</td><td>Booking &rarr; payment &rarr; notification outbox events</td><td>Yes, <code class="inline">localhost:9092</code></td></tr>
+          <tr><td>SMTP server</td><td>notification</td><td>Yes, <code class="inline">localhost:1025</code></td></tr>
+        </tbody>
+      </table>
+      <p>Plus three third-party API integrations that have <strong>no defaults</strong> and will stop the app from starting if they're missing:</p>
+      <ul>
+        <li><code class="inline">MISTRAL_API_KEY</code> &mdash; search-ai's Spring AI chat model</li>
+        <li><code class="inline">DUFFEL_API_KEY</code> &mdash; flight search &amp; booking via Duffel</li>
+        <li><code class="inline">RAZOR_PAY_API_KEY</code>, <code class="inline">RAZOR_PAY_API_SECRET</code>, <code class="inline">RAZORPAY_WEBHOOK_SECRET</code> &mdash; payment-service via Razorpay</li>
+      </ul>
+      <p>The plan: one <strong>Ampere A1</strong> compute instance (Always Free gives you up to 4 OCPU / 24GB RAM of it &mdash; comfortably enough for the app plus every one of those services in containers on the same box), fronted by Caddy for free TLS.</p>
+    </section>
+
+    <!-- PHASE 1 -->
+    <section class="phase" id="phase-1">
+      <div class="phase-head"><span class="phase-num">01</span><h2>Create the Always Free account</h2></div>
+      <p class="phase-why">Everything downstream depends on which home region you pick here &mdash; it can't be changed later.</p>
+      <ol>
+        <li>Go to Oracle's cloud free tier sign-up page and start registration with your email.</li>
+        <li>Verify your email, then your phone number by SMS code.</li>
+        <li>Enter a credit or debit card for identity verification. This does not create a recurring charge &mdash; Oracle explicitly does not auto-upgrade you to a paid account, and Always Free resources stay free indefinitely.</li>
+        <li>
+          Choose your <strong>Home Region</strong> carefully.
+          <div class="callout"><strong>Region matters more than it looks.</strong> Ampere A1 "out of host capacity" errors are a known Always Free pain point in some regions. If you already know a specific region has been reliable for A1 capacity, prefer it; otherwise pick the region physically closest to your users and be ready to retry the instance launch a few times in Phase 4.</div>
+        </li>
+        <li>Submit and wait for the "your account is ready" email &mdash; provisioning usually takes a few minutes, occasionally longer.</li>
+      </ol>
+    </section>
+
+    <!-- PHASE 2 -->
+    <section class="phase" id="phase-2">
+      <div class="phase-head"><span class="phase-num">02</span><h2>Set a safety net before you provision anything</h2></div>
+      <p class="phase-why">A new account starts in a 30-day/$300 trial layered on top of the permanent Always Free allowance. It's easy to accidentally pick a shape or option that isn't Always Free eligible &mdash; a budget alert catches that before it becomes a bill.</p>
+      <ol>
+        <li>In the console, open <strong>Governance &amp; Administration &rarr; Budgets &rarr; Create Budget</strong>.</li>
+        <li>Scope it to your whole tenancy, set an amount like <code class="inline">$1</code>, and add an alert rule at a low threshold (e.g. actual spend &gt; $0.01).</li>
+        <li>Add your email as the alert recipient.</li>
+      </ol>
+      <p>Two ground rules that keep you inside Always Free for this deployment:</p>
+      <ul>
+        <li>Only choose shapes and images explicitly labeled <strong>"Always Free eligible"</strong> in the console.</li>
+        <li>Skip Autonomous Database entirely &mdash; it's Oracle DB, not Postgres, and would mean rewriting the JDBC layer. This guide runs Postgres in a container instead, which is zero code changes and still free (self-hosted on the free compute + block storage allowance).</li>
+      </ul>
+    </section>
+
+    <!-- PHASE 3 -->
+    <section class="phase" id="phase-3">
+      <div class="phase-head"><span class="phase-num">03</span><h2>Open the network before you need it</h2></div>
+      <p class="phase-why">Doing this before launching the instance means you're not debugging "why can't I reach my server" and "did I configure Docker right" at the same time.</p>
+      <ol>
+        <li>Go to <strong>Networking &rarr; Virtual Cloud Networks</strong>. A default VCN was created for you when the account provisioned &mdash; use it.</li>
+        <li>Open its public subnet's <strong>Default Security List &rarr; Ingress Rules</strong>.</li>
+        <li>
+          Confirm/add these stateful ingress rules for <code class="inline">0.0.0.0/0</code>:
+          <table>
+            <thead><tr><th>Port</th><th>Protocol</th><th>Why</th></tr></thead>
+            <tbody>
+              <tr><td>22</td><td>TCP</td><td>SSH (usually already present)</td></tr>
+              <tr><td>80</td><td>TCP</td><td>HTTP &mdash; Let's Encrypt validation + redirect</td></tr>
+              <tr><td>443</td><td>TCP</td><td>HTTPS &mdash; the actual front door</td></tr>
+            </tbody>
+          </table>
+        </li>
+        <li>Deliberately <strong>don't</strong> open 8090 here &mdash; the app port stays internal, reached only through the reverse proxy you'll set up in Phase 10.</li>
+        <li>Optional but recommended: <strong>Networking &rarr; IP Management &rarr; Reserved Public IPs &rarr; Create Reserved Public IP</strong>. One is included in Always Free, and it keeps your address stable if you ever stop/start the instance.</li>
+      </ol>
+    </section>
+
+    <!-- PHASE 4 -->
+    <section class="phase" id="phase-4">
+      <div class="phase-head"><span class="phase-num">04</span><h2>Launch the Ampere A1 instance</h2></div>
+      <p class="phase-why">This one VM is the entire deployment target &mdash; app container plus every backing service, all on the free 4 OCPU / 24GB Arm allowance.</p>
+      <ol>
+        <li>Generate an SSH key pair locally if you don't already have one: <code class="inline">ssh-keygen -t ed25519 -C "travel-ai-oci"</code>.</li>
+        <li><strong>Compute &rarr; Instances &rarr; Create Instance</strong>.</li>
+        <li>Name it, e.g. <code class="inline">travel-ai</code>.</li>
+        <li>Under <strong>Image and shape</strong>, pick a Canonical Ubuntu 24.04 image (marked "Always Free eligible"), then change the shape to <strong>Ampere &middot; VM.Standard.A1.Flex</strong> and set it to <strong>4 OCPU / 24 GB memory</strong> &mdash; the full free allotment.</li>
+        <li>Attach it to the public subnet from Phase 3, with a public IP assigned (your reserved IP, if you made one).</li>
+        <li>Upload the <code class="inline">.pub</code> half of the key pair you generated.</li>
+        <li>Leave the boot volume at its default (you can grow it later, up to 200GB total across all volumes, still free).</li>
+        <li>Create. Provisioning takes one to a few minutes.</li>
+      </ol>
+      <div class="callout">
+        <strong>"Out of host capacity" on the A1 shape?</strong> This is the most common Always Free snag &mdash; it means that region's free Arm pool is momentarily full, not that your account is blocked. Wait a bit and retry, try a different Availability Domain in the same region if more than one is offered, or try again at an off-peak hour. It almost always succeeds within a day of retries.
+      </div>
+    </section>
+
+    <!-- PHASE 5 -->
+    <section class="phase" id="phase-5">
+      <div class="phase-head"><span class="phase-num">05</span><h2>Prepare the box</h2></div>
+      <p class="phase-why">Oracle's Ubuntu image ships with its own <code class="inline">iptables</code> rules that drop everything except SSH, on top of the cloud-level Security List you already opened. Both layers need to agree.</p>
+      <div class="code-block">
+        <div class="label">local machine</div>
+        <pre><code>ssh -i ~/.ssh/id_ed25519 ubuntu@&lt;your-instance-public-ip&gt;</code></pre>
+      </div>
+
+      <h3>Update and patch</h3>
+      <div class="code-block">
+        <pre><code>sudo apt update &amp;&amp; sudo apt full-upgrade -y</code></pre>
+      </div>
+
+      <h3>Open 80/443 in the host firewall</h3>
+      <p>Check the existing chain first so you insert before the final reject rule, not after it:</p>
+      <div class="code-block">
+        <pre><code>sudo iptables -L INPUT -n --line-numbers</code></pre>
+      </div>
+      <p>Then insert accept rules ahead of that reject line (adjust the line number to match what you saw):</p>
+      <div class="code-block">
+        <pre><code>sudo iptables -I INPUT 5 -p tcp --dport 80 -j ACCEPT
+sudo iptables -I INPUT 6 -p tcp --dport 443 -j ACCEPT
+sudo apt install -y iptables-persistent
+sudo netfilter-persistent save</code></pre>
+      </div>
+      <p>Notice port <code class="inline">8090</code> is intentionally never added here &mdash; that keeps the raw app port unreachable from the internet even though Docker will bind it on the host.</p>
+
+      <h3>Let Elasticsearch actually start</h3>
+      <p>Elasticsearch refuses to boot on Linux without this kernel setting:</p>
+      <div class="code-block">
+        <pre><code>echo "vm.max_map_count=262144" | sudo tee -a /etc/sysctl.conf
+sudo sysctl -p</code></pre>
+      </div>
+
+      <h3>Install Docker</h3>
+      <div class="code-block">
+        <pre><code>curl -fsSL https://get.docker.com | sudo sh
+sudo usermod -aG docker $USER
+newgrp docker
+sudo systemctl enable --now docker</code></pre>
+      </div>
+      <p>Docker's official install script builds the right (arm64) images for this VM automatically &mdash; nothing else to configure for architecture.</p>
+    </section>
+
+    <!-- PHASE 6 -->
+    <section class="phase" id="phase-6">
+      <div class="phase-head"><span class="phase-num">06</span><h2>Pull the code down</h2></div>
+      <p class="phase-why">Building on the VM itself (Arm) avoids any cross-architecture image weirdness &mdash; the same Dockerfile just works because it's compiled where it runs.</p>
+      <div class="code-block">
+        <pre><code>sudo apt install -y git
+git clone https://github.com/&lt;your-org&gt;/travel-ai.git
+cd travel-ai</code></pre>
+      </div>
+      <p>If the repo is private, clone with a <a class="ext" href="#">personal access token</a> in the URL, or copy a tarball up with <code class="inline">scp</code> instead.</p>
+    </section>
+
+    <!-- PHASE 7 -->
+    <section class="phase" id="phase-7">
+      <div class="phase-head"><span class="phase-num">07</span><h2>Containerize it</h2></div>
+      <p class="phase-why">Nothing in the repo builds a container image yet. The build only needs a JDK &mdash; the checked-in <code class="inline">mvnw</code> wrapper fetches Maven itself, and the <code class="inline">frontend</code> module's <code class="inline">frontend-maven-plugin</code> fetches its own pinned Node/npm and runs the Vite build, which writes straight into <code class="inline">app/src/main/resources/static</code>. A full, unfiltered reactor build (no <code class="inline">-pl</code>) is what guarantees the frontend module builds before <code class="inline">app</code> packages its resources.</p>
+
+      <h3><code class="inline">Dockerfile</code> (repo root)</h3>
+      <div class="code-block">
+        <div class="label">Dockerfile</div>
+        <pre><code>FROM eclipse-temurin:25-jdk AS build
+WORKDIR /workspace
+COPY . .
+RUN chmod +x mvnw &amp;&amp; ./mvnw -B -DskipTests package
+
+FROM eclipse-temurin:25-jre
+WORKDIR /app
+COPY --from=build /workspace/app/target/app-*.jar ./app.jar
+EXPOSE 8090
+ENTRYPOINT ["java", "-jar", "app.jar"]</code></pre>
+      </div>
+
+      <h3><code class="inline">.dockerignore</code> (repo root)</h3>
+      <p>The <code class="inline">frontend/node_modules</code> tree alone is large enough to make an unfiltered build context painfully slow to send to the Docker daemon &mdash; exclude it.</p>
+      <div class="code-block">
+        <div class="label">.dockerignore</div>
+        <pre><code>.git
+.idea
+**/target
+**/node_modules
+*.log
+.env</code></pre>
+      </div>
+
+      <div class="callout"><strong>Expect the first build to take a while.</strong> It's compiling eight Maven modules and a full npm install + Vite build in one pass. On a 4 OCPU A1 instance this typically finishes in a few minutes &mdash; let it run rather than assuming it's stuck.</div>
+    </section>
+
+    <!-- PHASE 8 -->
+    <section class="phase" id="phase-8">
+      <div class="phase-head"><span class="phase-num">08</span><h2>Compose the stack</h2></div>
+      <p class="phase-why">This is where every backing service and every secret the app needs gets wired together in one file, entirely inside the one VM.</p>
+
+      <h3>Secrets first &mdash; <code class="inline">.env</code> (repo root, already gitignored)</h3>
+      <div class="code-block">
+        <div class="label">.env</div>
+        <pre><code>POSTGRES_PASSWORD=choose-a-strong-password
+MISTRAL_API_KEY=your-mistral-key
+DUFFEL_API_KEY=your-duffel-key
+RAZOR_PAY_API_KEY=your-razorpay-key
+RAZOR_PAY_API_SECRET=your-razorpay-secret
+RAZORPAY_WEBHOOK_SECRET=your-razorpay-webhook-secret</code></pre>
+      </div>
+      <div class="callout"><strong>Lock it down:</strong> <code class="inline">chmod 600 .env</code>. It already matches an existing <code class="inline">.gitignore</code> entry in this repo, so it won't get committed by accident.</div>
+
+      <h3><code class="inline">docker-compose.yml</code> (repo root)</h3>
+      <p>Note the <code class="inline">app</code> service overrides <code class="inline">SPRING_DATASOURCE_URL</code> &mdash; the checked-in <code class="inline">application.yaml</code> hardcodes <code class="inline">jdbc:postgresql://localhost:5434/travel</code>, which only makes sense for local dev. Spring Boot's relaxed binding lets an environment variable override it without touching a single line of code.</p>
+      <div class="code-block">
+        <div class="label">docker-compose.yml</div>
+        <pre><code>services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: travel
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.15.3
+    environment:
+      - discovery.type=single-node
+      - xpack.security.enabled=false
+      - "ES_JAVA_OPTS=-Xms1g -Xmx1g"
+    volumes:
+      - es_data:/usr/share/elasticsearch/data
+    restart: unless-stopped
+
+  kafka:
+    image: bitnami/kafka:3.8
+    environment:
+      - KAFKA_CFG_NODE_ID=0
+      - KAFKA_CFG_PROCESS_ROLES=controller,broker
+      - KAFKA_CFG_LISTENERS=PLAINTEXT://:9092,CONTROLLER://:9093
+      - KAFKA_CFG_ADVERTISED_LISTENERS=PLAINTEXT://kafka:9092
+      - KAFKA_CFG_CONTROLLER_QUORUM_VOTERS=0@kafka:9093
+      - KAFKA_CFG_CONTROLLER_LISTENER_NAMES=CONTROLLER
+      - KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP=CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT
+      - ALLOW_PLAINTEXT_LISTENER=yes
+    volumes:
+      - kafka_data:/bitnami/kafka
+    restart: unless-stopped
+
+  mailpit:
+    image: axllent/mailpit:latest
+    restart: unless-stopped
+
+  app:
+    build: .
+    depends_on:
+      - postgres
+      - redis
+      - elasticsearch
+      - kafka
+      - mailpit
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/travel
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD}
+      ELASTICSEARCH_URIS: http://elasticsearch:9200
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      MAIL_HOST: mailpit
+      MAIL_PORT: 1025
+      MISTRAL_API_KEY: ${MISTRAL_API_KEY}
+      DUFFEL_API_KEY: ${DUFFEL_API_KEY}
+      RAZOR_PAY_API_KEY: ${RAZOR_PAY_API_KEY}
+      RAZOR_PAY_API_SECRET: ${RAZOR_PAY_API_SECRET}
+      RAZORPAY_WEBHOOK_SECRET: ${RAZORPAY_WEBHOOK_SECRET}
+    ports:
+      - "127.0.0.1:8090:8090"
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+  es_data:
+  kafka_data:</code></pre>
+      </div>
+      <p>Binding the app's port as <code class="inline">127.0.0.1:8090:8090</code> rather than just <code class="inline">8090:8090</code> means Docker itself only exposes it to the loopback interface &mdash; the reverse proxy in Phase 10 reaches it locally, nothing else can.</p>
+      <div class="callout"><strong>No real email delivery here.</strong> Mailpit only <em>captures</em> mail for inspection (web UI on port 8025, tunnel it over SSH if you want to look) &mdash; it doesn't deliver anything. If notification emails need to actually reach inboxes, swap <code class="inline">MAIL_HOST</code>/<code class="inline">MAIL_PORT</code> for a real SMTP relay (OCI Email Delivery, or any provider's SMTP credentials) instead of the mailpit service.</div>
+    </section>
+
+    <!-- PHASE 9 -->
+    <section class="phase" id="phase-9">
+      <div class="phase-head"><span class="phase-num">09</span><h2>First boot</h2></div>
+      <p class="phase-why">This is the moment every Flyway migration across booking-service, payment-service, notification, and duffle-api/flight runs against the same shared schema for the first time outside your laptop.</p>
+      <div class="code-block">
+        <pre><code>docker compose up -d --build</code></pre>
+      </div>
+      <div class="code-block">
+        <div class="label">watch the app come up</div>
+        <pre><code>docker compose logs -f app</code></pre>
+      </div>
+      <p>Look for Flyway's migration log lines followed by <code class="inline">Started AppApplication</code>. Then confirm from the box itself:</p>
+      <div class="code-block">
+        <pre><code>curl -s http://localhost:8090/actuator/health</code></pre>
+      </div>
+      <p>A <code class="inline">{"status":"UP"}</code> response means Postgres, Redis, Elasticsearch, and Kafka are all reachable and the app is healthy.</p>
+    </section>
+
+    <!-- PHASE 10 -->
+    <section class="phase" id="phase-10">
+      <div class="phase-head"><span class="phase-num">10</span><h2>Put a real front door on it</h2></div>
+      <p class="phase-why">Port 8090 is only bound to loopback now, and it's HTTP, not HTTPS. Caddy gets you both a public URL and free automatic TLS in about four lines of config.</p>
+      <ol>
+        <li>
+          Decide on a hostname. If you own a domain, point an <code class="inline">A</code> record at the instance's public IP. If not, use a free wildcard-DNS-to-IP service like <code class="inline">sslip.io</code> &mdash; e.g. <code class="inline">203-0-113-10.sslip.io</code> resolves straight to <code class="inline">203.0.113.10</code>, and Let's Encrypt can issue a real certificate for it because it's a genuine public DNS name.
+        </li>
+        <li>Install Caddy:</li>
+      </ol>
+      <div class="code-block">
+        <pre><code>sudo apt install -y debian-keyring debian-archive-keyring apt-transport-https curl
+curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/gpg.key' | sudo gpg --dearmor -o /usr/share/keyrings/caddy-stable-archive-keyring.gpg
+curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/debian.deb.txt' | sudo tee /etc/apt/sources.list.d/caddy-stable.list
+sudo apt update &amp;&amp; sudo apt install -y caddy</code></pre>
+      </div>
+      <div class="code-block">
+        <div class="label">/etc/caddy/Caddyfile</div>
+        <pre><code>your-hostname-or-sslip-address {
+    reverse_proxy localhost:8090
+}</code></pre>
+      </div>
+      <div class="code-block">
+        <pre><code>sudo systemctl reload caddy</code></pre>
+      </div>
+      <p>Caddy requests and renews the certificate itself the first time it sees a request on 443 &mdash; nothing else to run.</p>
+    </section>
+
+    <!-- PHASE 11 -->
+    <section class="phase" id="phase-11">
+      <div class="phase-head"><span class="phase-num">11</span><h2>Make it survive a reboot</h2></div>
+      <p class="phase-why">A patch, a resize, or a stop/start shouldn't mean SSH-ing back in to manually bring the stack up.</p>
+      <ul>
+        <li>Every service in the compose file already has <code class="inline">restart: unless-stopped</code> &mdash; Docker remembers a container's desired state across a daemon restart and brings it back on its own.</li>
+        <li>The only other requirement is that the Docker daemon itself starts on boot, which the install script in Phase 5 already enabled: <code class="inline">sudo systemctl enable --now docker</code>.</li>
+        <li>Caddy is a systemd service too and is enabled by its own package install.</li>
+      </ul>
+      <p>Worth actually testing once:</p>
+      <div class="code-block">
+        <pre><code>sudo reboot</code></pre>
+      </div>
+      <p>Wait a minute, reconnect over SSH, and re-run the <code class="inline">curl .../actuator/health</code> check from Phase 9.</p>
+    </section>
+
+    <!-- PHASE 12 -->
+    <section class="phase" id="phase-12">
+      <div class="phase-head"><span class="phase-num">12</span><h2>Guardrails and teardown</h2></div>
+      <p class="phase-why">"Free forever" from Oracle still has two catches worth knowing before you walk away from this for a month.</p>
+      <ul>
+        <li><strong>Idle-account reclamation.</strong> Oracle can reclaim Always Free resources after a sustained stretch with no console sign-in and no resource activity &mdash; check the current threshold in OCI's billing documentation, since policy details do shift. Logging into the console occasionally is enough to keep the account counted as active.</li>
+        <li><strong>Stay inside the free shapes.</strong> The budget alert from Phase 2 is your tripwire if a future resize or a second instance accidentally steps outside the Always Free allotment.</li>
+      </ul>
+
+      <h3>What "done" looks like</h3>
+      <ul class="done-list">
+        <li><span class="mark">&check;</span> Always Free tenancy created, home region chosen deliberately</li>
+        <li><span class="mark">&check;</span> Budget alert active</li>
+        <li><span class="mark">&check;</span> One Ampere A1 instance (4 OCPU / 24GB), Security List open on 22/80/443 only</li>
+        <li><span class="mark">&check;</span> Docker + the full stack running via <code class="inline">docker compose</code>, app port bound to loopback only</li>
+        <li><span class="mark">&check;</span> Caddy serving the app over HTTPS on a real hostname</li>
+        <li><span class="mark">&check;</span> Stack confirmed to survive a reboot</li>
+      </ul>
+
+      <h3>If you ever want it gone</h3>
+      <div class="code-block">
+        <pre><code>docker compose down -v</code></pre>
+      </div>
+      <p>Then in the console: <strong>Compute &rarr; Instances</strong> &rarr; terminate the instance (tick "permanently delete the attached boot volume"), and if you reserved one, release the Reserved Public IP so it doesn't sit unused.</p>
+    </section>
+
+    <footer>
+      Written against this repo's state as of 2026-08-23 &mdash; Java 25 / Spring Boot 4.1 / Maven reactor with <code class="inline">common</code>, <code class="inline">duffle-api</code>, <code class="inline">search-service</code>, <code class="inline">search-ai</code>, <code class="inline">notification</code>, <code class="inline">payment-service</code>, <code class="inline">booking-service</code>, <code class="inline">frontend</code>, assembled by <code class="inline">app</code>.
+    </footer>
+  </main>
+</div>
+
+<script>
+  (function () {
+    document.querySelectorAll('.code-block').forEach(function (block) {
+      var pre = block.querySelector('pre');
+      if (!pre) return;
+      var btn = document.createElement('button');
+      btn.className = 'copy-btn';
+      btn.type = 'button';
+      btn.textContent = 'Copy';
+      btn.addEventListener('click', function () {
+        var text = pre.textContent;
+        try {
+          navigator.clipboard.writeText(text).then(function () {
+            btn.textContent = 'Copied';
+            setTimeout(function () { btn.textContent = 'Copy'; }, 1400);
+          });
+        } catch (e) {}
+      });
+      block.appendChild(btn);
+    });
+
+    var links = Array.prototype.slice.call(document.querySelectorAll('#railnav a'));
+    var sections = links.map(function (a) {
+      return document.querySelector(a.getAttribute('href'));
+    });
+    if ('IntersectionObserver' in window) {
+      var observer = new IntersectionObserver(function (entries) {
+        entries.forEach(function (entry) {
+          var idx = sections.indexOf(entry.target);
+          if (idx === -1) return;
+          if (entry.isIntersecting) {
+            links.forEach(function (l) { l.classList.remove('active'); });
+            links[idx].classList.add('active');
+          }
+        });
+      }, { rootMargin: '-15% 0px -70% 0px' });
+      sections.forEach(function (s) { if (s) observer.observe(s); });
+    }
+  })();
+</script>

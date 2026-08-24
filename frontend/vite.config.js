@@ -13,6 +13,11 @@ export default defineConfig({
   server: {
     proxy: {
       '/api': 'http://localhost:8090',
+      // booking-service / order-service / payment-service controllers are
+      // mounted at bare paths (no /api prefix) on the same app process.
+      '/bookings': 'http://localhost:8090',
+      '/orders': 'http://localhost:8090',
+      '/payments': 'http://localhost:8090',
     },
   },
 })

@@ -5,8 +5,10 @@ import com.travel.payment.internal.gateway.razorpay.RazorpayGateway
 import com.travel.payment.internal.gateway.razorpay.ReceiptAlreadyExistsException
 import com.travel.payment.internal.repository.PaymentRepository
 import com.travel.payment.internal.repository.PaymentTransactionalOps
+import org.springframework.stereotype.Service
 import kotlin.uuid.Uuid
 
+@Service
 class PaymentServiceImpl(
     private val repository: PaymentRepository,
     private val transactionalOps: PaymentTransactionalOps, // see P8 -- separate bean on purpose
@@ -20,7 +22,6 @@ class PaymentServiceImpl(
     ): Payment {
 
         val idempotencyKey = "booking:$bookingId"
-        transactionalOps.findOrInsertPending(bookingId,idempotencyKey,amountPaise,currency)
         val (payment,alreadyExisted) = transactionalOps.findOrInsertPending(bookingId,idempotencyKey,amountPaise,currency)
         if(alreadyExisted) return payment
         val result = try{

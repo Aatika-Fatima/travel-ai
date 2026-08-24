@@ -10,6 +10,7 @@ import com.travel.duffel.api.dto.response.DuffelErrorResponse
 import com.travel.duffel.api.dto.response.DuffelOffer
 import com.travel.duffel.api.dto.response.DuffelOfferResponse
 import com.travel.duffel.api.dto.response.DuffelOrderData
+import com.travel.duffel.api.dto.response.DuffelOrderListResponse
 import com.travel.duffel.api.dto.response.DuffelOrderResponse
 import org.springframework.retry.annotation.Backoff
 import org.springframework.retry.annotation.Retryable
@@ -83,6 +84,39 @@ class DuffelOrderClient(
             }
 
         return response?.data ?: throw ExternalApiException("Duffel API returned an empty order response")
+    }
+
+    // Added alongside fetchOffer()/createOrder() -- same retry/error-mapping
+    // shape as both. Backs ReconciliationJob's sweep (order-service §P8):
+    // "has an order already been created against this internal_order_id."
+    @Retryable(
+        exceptionExpression = "#root instanceof T(com.travel.common.exception.ExternalApiException) && #root.retryable",
+        maxAttempts = 3,
+        backoff = Backoff(delay = 500, multiplier = 2.0),
+    )
+    fun findOrdersByMetadata(key: String, value: String): List<DuffelOrderData> {
+        val response =
+            try {
+                duffelRestClient
+                    .get()
+                    .uri { builder ->
+                        builder.path("/air/orders")
+                            .queryParam("metadata[$key]", value)
+                            .build()
+                    }
+                    .retrieve()
+                    .body(DuffelOrderListResponse::class.java)
+            } catch (ex: RestClientResponseException) {
+                throw reclassifyOrderError(ex)
+            } catch (ex: RestClientException) {
+                throw ExternalApiException(
+                    "Duffel API request timed out or was unreachable",
+                    retryable = true,
+                    cause = ex,
+                )
+            }
+
+        return response?.data ?: emptyList()
     }
 
     private fun reclassifyOfferError(ex: RestClientResponseException): RuntimeException {

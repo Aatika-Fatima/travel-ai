@@ -35,6 +35,8 @@
         <module>search-ai</module>
         <module>notification</module>
         <module>payment-service</module>
+        <module>booking-service</module>
+        <module>order-service</module>
         <module>app</module>
     </modules>
     <properties>
@@ -87,6 +89,16 @@
             <dependency>
                 <groupId>com.travel</groupId>
                 <artifactId>payment-service</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.travel</groupId>
+                <artifactId>booking-service</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.travel</groupId>
+                <artifactId>order-service</artifactId>
                 <version>${project.version}</version>
             </dependency>
         </dependencies>

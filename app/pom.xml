@@ -46,6 +46,14 @@
             <artifactId>payment-service</artifactId>
         </dependency>
         <dependency>
+            <groupId>com.travel</groupId>
+            <artifactId>booking-service</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.travel</groupId>
+            <artifactId>order-service</artifactId>
+        </dependency>
+        <dependency>
             <groupId>org.jetbrains.kotlin</groupId>
             <artifactId>kotlin-reflect</artifactId>
         </dependency>

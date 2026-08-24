@@ -27,13 +27,13 @@ class DuffelBookingServiceImpl(
     private val duffelOrderClient: DuffelOrderClient,
     private val bookingOutboxWriter: BookingOutboxWriter,
 ) : DuffelBookingService {
-    override fun createBooking(request: BookingRequest): BookingResult {
+    override fun createBooking(request: BookingRequest, idempotencyKey: String, orderId: String?): BookingResult {
         val offer = duffelOrderClient.fetchOffer(request.offerId)
         assertNotExpired(offer)
         val offerPassengerIds = resolveOfferPassengerIds(request, offer)
 
-        val payload = toOrderPayload(request, offer, offerPassengerIds)
-        val idempotencyKey = UUID.randomUUID().toString()
+        val payload = toOrderPayload(request, offer, offerPassengerIds, orderId)
+
         val order = duffelOrderClient.createOrder(payload, idempotencyKey)
         val emails = request.passengers.map { it.email }.distinct()
         val result = toBookingResult(order, emails)
@@ -91,6 +91,7 @@ class DuffelBookingServiceImpl(
         request: BookingRequest,
         offer: DuffelOffer,
         offerPassengerIds: List<String>,
+        orderId: String?,
     ): DuffelOrderRequestPayload =
         DuffelOrderRequestPayload(
             selectedOffers = listOf(offer.id),
@@ -106,6 +107,7 @@ class DuffelBookingServiceImpl(
                         amount = offer.totalAmount,
                     ),
                 ),
+            metadata = orderId?.let { mapOf("internal_order_id" to it) },
         )
 
     private fun toPassengerRequest(

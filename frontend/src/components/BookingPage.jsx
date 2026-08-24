@@ -1,7 +1,9 @@
 import { useMemo, useState } from 'react'
 import TravelerForm from './TravelerForm.jsx'
-import BookingConfirmation from './BookingConfirmation.jsx'
-import { bookFlight } from '../api/bookingApi.js'
+import OrderStatusWait from './OrderStatusWait.jsx'
+import PaymentScreen from './PaymentScreen.jsx'
+import OrderConfirmation from './OrderConfirmation.jsx'
+import { createBooking, pollForConfirmedOrder } from '../api/orderSagaApi.js'
 import { formatDuration, formatPrice, formatTime, stopsLabel } from '../utils/format.js'
 
 function emptyTraveler() {
@@ -102,16 +104,12 @@ function FareSummaryCard({ offer, status }) {
           <span>{formatPrice(offer.price.amount, offer.price.currency)}</span>
         </div>
 
-        <div className="mt-3 rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-700">
-          Sandbox test booking — no real payment is collected.
-        </div>
-
         <button
           type="submit"
           disabled={status === 'submitting'}
           className="mt-4 w-full rounded-xl bg-accent-500 px-6 py-3 text-sm font-bold text-white shadow-md shadow-accent-500/30 transition-colors hover:bg-accent-600 disabled:cursor-not-allowed disabled:opacity-60"
         >
-          {status === 'submitting' ? 'Booking…' : 'Confirm & Book'}
+          {status === 'submitting' ? 'Booking…' : 'Continue to Payment'}
         </button>
       </div>
     </div>
@@ -126,7 +124,12 @@ export default function BookingPage({ offer, passengers, onBackToResults }) {
   const [status, setStatus] = useState('form')
   const [validation, setValidation] = useState(null)
   const [bookingError, setBookingError] = useState(null)
-  const [result, setResult] = useState(null)
+  const [orderStatus, setOrderStatus] = useState(null)
+  const [order, setOrder] = useState(null)
+  // Generated once per mount, not per submit -- a retry after a transient
+  // network error re-sends the SAME key, so booking-service and
+  // order-service both dedupe the retry instead of creating a second order.
+  const [idempotencyKey] = useState(() => crypto.randomUUID())
 
   const updateTraveler = (index, next) => {
     setTravelers((prev) => prev.map((traveler, i) => (i === index ? next : traveler)))
@@ -146,7 +149,7 @@ export default function BookingPage({ offer, passengers, onBackToResults }) {
     setStatus('submitting')
     setBookingError(null)
     try {
-      const bookingResult = await bookFlight({
+      await createBooking(idempotencyKey, {
         offerId: offer.id,
         passengers: travelers.map((traveler) => ({
           title: traveler.title,
@@ -159,16 +162,58 @@ export default function BookingPage({ offer, passengers, onBackToResults }) {
         })),
         contact: effectiveContact,
       })
-      setResult(bookingResult)
-      setStatus('success')
+
+      setStatus('waiting-order')
+      const outcome = await pollForConfirmedOrder(idempotencyKey, {
+        onTick: (polledOrder) => setOrderStatus(polledOrder?.status ?? null),
+      })
+
+      if (outcome.outcome === 'confirmed') {
+        setOrder(outcome.order)
+        setStatus('payment')
+      } else if (outcome.outcome === 'failed') {
+        setBookingError({
+          message: `The airline could not confirm this booking (${outcome.order.status.toLowerCase().replaceAll('_', ' ')}).`,
+          details: [],
+        })
+        setStatus('error')
+      } else {
+        setBookingError({ message: 'This is taking longer than expected. Please try again shortly.', details: [] })
+        setStatus('error')
+      }
     } catch (err) {
       setBookingError({ message: err.message, details: err.details ?? [] })
       setStatus('error')
     }
   }
 
-  if (status === 'success' && result) {
-    return <BookingConfirmation result={result} onBackToSearch={onBackToResults} />
+  if (status === 'waiting-order') {
+    return <OrderStatusWait orderStatus={orderStatus} />
+  }
+
+  if (status === 'payment' && order) {
+    return (
+      <PaymentScreen
+        orderId={order.orderId}
+        amount={offer.price.amount}
+        currency={offer.price.currency}
+        contactEmail={effectiveContact.email}
+        contactPhone={effectiveContact.phoneNumber}
+        onPaid={() => setStatus('paid')}
+      />
+    )
+  }
+
+  if (status === 'paid' && order) {
+    return (
+      <OrderConfirmation
+        order={order}
+        amount={offer.price.amount}
+        currency={offer.price.currency}
+        contactEmail={effectiveContact.email}
+        onBackToSearch={onBackToResults}
+      />
+    )
   }
 
   return (

@@ -4,17 +4,26 @@ import jakarta.persistence.Column
 import jakarta.persistence.Entity
 import jakarta.persistence.EnumType
 import jakarta.persistence.Enumerated
+import jakarta.persistence.Id
+import jakarta.persistence.Table
 import jakarta.persistence.Version
-import org.hibernate.annotations.Audited
-import org.springframework.data.annotation.Id
+import org.hibernate.annotations.JavaType
+import org.hibernate.annotations.JdbcTypeCode
+import org.hibernate.type.SqlTypes
 import java.time.Instant
-import java.util.UUID
 import kotlin.uuid.Uuid
 
 @Entity
-@Audited.Table(name = "payments")
+@Table(name = "payments")
 class Payment(
-    @Id val id: Uuid = Uuid.random(),
+    // @JavaType/@JdbcTypeCode, not @Convert -- Hibernate 7 rejects an
+    // AttributeConverter on an @Id attribute outright (KotlinUuidJavaType
+    // is the Id-safe equivalent of KotlinUuidAttributeConverter, which
+    // covers bookingId below and every other non-Id Uuid column instead).
+    @Id
+    @JavaType(KotlinUuidJavaType::class)
+    @JdbcTypeCode(SqlTypes.UUID)
+    val id: Uuid = Uuid.random(),
     @Column(name = "booking_id") val bookingId: Uuid,
     @Column(name = "idempotency_key") val idempotencyKey: String,
     @Column(name = "amount_paise") val amountPaise: Long,

@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RestController
+import java.util.UUID
 
 @RestController
 @RequestMapping("/api/v1/flights")
@@ -23,8 +24,14 @@ class FlightSearchController(
         @Valid @RequestBody request: FlightSearchRequest,
     ): FlightSearchResult = flightSearchService.search(request)
 
+    // Kept working after order-service/duffle-api §P3 moved idempotencyKey
+    // onto the caller -- this endpoint isn't part of order-service's
+    // dedup-by-idempotency-key flow, so it still mints its own key here,
+    // same as DuffelBookingServiceImpl used to internally. It does not get
+    // order-service's zero-duplication guarantee; POST /orders is the path
+    // that does.
     @PostMapping("/book")
     fun book(
         @Valid @RequestBody request: BookingRequest,
-    ): BookingResult = bookingService.createBooking(request)
+    ): BookingResult = bookingService.createBooking(request, UUID.randomUUID().toString())
 }

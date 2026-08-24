@@ -1,0 +1,23 @@
+spring:
+  flyway:
+    enabled: false
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+  test:
+    database:
+      replace: none
+  datasource:
+    # PostgreSQL compatibility mode so H2 accepts the same "jsonb" column
+    # type the real migration uses, instead of the random-URL embedded
+    # database @DataJpaTest would otherwise substitute.
+    url: jdbc:h2:mem:booking-service;MODE=PostgreSQL;DB_CLOSE_DELAY=-1
+    driver-class-name: org.h2.Driver
+    username: sa
+    password:
+    hikari:
+      # 20+ threads race the same @Transactional method in
+      # BookingConcurrencyTest -- the default pool size (10) would just
+      # serialize half of them behind a connection wait instead of letting
+      # the real race happen.
+      maximum-pool-size: 30

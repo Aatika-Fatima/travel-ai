@@ -51,11 +51,17 @@ spring:
           starttls:
             enable: "false"
 
+razorpay:
+  api-key: ${RAZOR_PAY_API_KEY}
+  api-secret: ${RAZOR_PAY_API_SECRET}
+  webhook-secret: ${RAZORPAY_WEBHOOK_SECRET}
+
 duffel:
   api-key: ${DUFFEL_API_KEY}
   base-url: https://api.duffel.com
   version: v2
   timeout-ms: 10000
+  webhook-secret: ${DUFFEL_WEBHOOK_SECRET}
   airports:
     sync:
       enabled: true

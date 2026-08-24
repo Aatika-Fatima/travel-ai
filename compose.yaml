@@ -44,7 +44,7 @@ services:
       KAFKA_CONTROLLER_QUORUM_VOTERS: 1@localhost:9093
       KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT,INTERNAL:PLAINTEXT
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
-      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "false"  # topics are created explicitly in G5
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"  # topics are created explicitly in G5
 
   kafka-ui:
     image: provectuslabs/kafka-ui:latest

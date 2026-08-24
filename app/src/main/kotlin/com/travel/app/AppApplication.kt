@@ -22,6 +22,9 @@ import org.springframework.scheduling.annotation.EnableScheduling
         "com.travel.duffel",
         "com.travel.searchai",
         "com.travel.notification",
+        "com.travel.bookingservice",
+        "com.travel.payment",
+        "com.travel.orderservice",
     ],
 )
 @EntityScan(
@@ -29,12 +32,18 @@ import org.springframework.scheduling.annotation.EnableScheduling
         "com.travel.common.entity",
         "com.travel.duffel.internal.airport.entity",
         "com.travel.notification.internal.entity",
+        "com.travel.bookingservice.internal.persistence",
+        "com.travel.payment.internal.entity",
+        "com.travel.orderservice.internal.persistence",
     ],
 )
 @EnableJpaRepositories(
     basePackages = [
         "com.travel.duffel.internal.airport.repository",
         "com.travel.notification.internal.repository",
+        "com.travel.bookingservice.internal.persistence",
+        "com.travel.payment.internal.repository",
+        "com.travel.orderservice.internal.persistence",
     ],
 )
 @EnableElasticsearchRepositories(basePackages = ["com.travel.duffel.internal.airport.document"])

@@ -26,6 +26,6 @@ spring:
       value-serializer: org.apache.kafka.common.serialization.StringSerializer
 
 razorpay:
-  key-id: ${RAZOR_PAY_API_KEY}
-  key-secret: ${RAZOR_PAY_API_SECRET}
+  api-key: ${RAZOR_PAY_API_KEY}
+  api-secret: ${RAZOR_PAY_API_SECRET}
   webhook-secret: ${RAZORPAY_WEBHOOK_SECRET}

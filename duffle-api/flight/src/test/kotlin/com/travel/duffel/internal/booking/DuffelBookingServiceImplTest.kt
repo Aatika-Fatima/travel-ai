@@ -108,7 +108,7 @@ class DuffelBookingServiceImplTest {
         wireMock.stubFor(get(urlPathEqualTo("/air/offers/off_123")).willReturn(okJson(offerBody())))
         wireMock.stubFor(post(urlPathEqualTo("/air/orders")).willReturn(okJson(ORDER_BODY)))
 
-        val result = service().createBooking(request())
+        val result = service().createBooking(request(), "test-idempotency-key")
 
         assertEquals("ord_123", result.orderId)
         assertEquals("ABC123", result.bookingReference)
@@ -124,7 +124,7 @@ class DuffelBookingServiceImplTest {
                 .willReturn(okJson(offerBody(expiresAt = "2000-01-01T00:00:00Z"))),
         )
 
-        val ex = assertFailsWith<BookingException> { service().createBooking(request()) }
+        val ex = assertFailsWith<BookingException> { service().createBooking(request(), "test-idempotency-key") }
 
         assertEquals(BookingFailureReason.OFFER_EXPIRED, ex.reason)
         wireMock.verify(0, postRequestedFor(urlPathEqualTo("/air/orders")))
@@ -134,7 +134,7 @@ class DuffelBookingServiceImplTest {
     fun `rejects a passenger count that does not match the offer without calling Duffel`() {
         wireMock.stubFor(get(urlPathEqualTo("/air/offers/off_123")).willReturn(okJson(offerBody())))
 
-        val ex = assertFailsWith<BookingException> { service().createBooking(request(passengerCount = 2)) }
+        val ex = assertFailsWith<BookingException> { service().createBooking(request(passengerCount = 2), "test-idempotency-key") }
 
         assertEquals(BookingFailureReason.VALIDATION_FAILED, ex.reason)
         assertEquals("expected 1 passenger(s) for this offer, got 2", ex.fieldErrors["passengers"])
@@ -154,7 +154,7 @@ class DuffelBookingServiceImplTest {
                 ),
         )
 
-        val ex = assertFailsWith<BookingException> { service().createBooking(request()) }
+        val ex = assertFailsWith<BookingException> { service().createBooking(request(), "test-idempotency-key") }
 
         assertEquals(BookingFailureReason.VALIDATION_FAILED, ex.reason)
     }
@@ -172,7 +172,7 @@ class DuffelBookingServiceImplTest {
                 ),
         )
 
-        val ex = assertFailsWith<BookingException> { service().createBooking(request()) }
+        val ex = assertFailsWith<BookingException> { service().createBooking(request(), "test-idempotency-key") }
 
         assertEquals(BookingFailureReason.PAYMENT_DECLINED, ex.reason)
     }
@@ -183,7 +183,7 @@ class DuffelBookingServiceImplTest {
             get(urlPathEqualTo("/air/offers/off_123")).willReturn(aResponse().withStatus(410)),
         )
 
-        val ex = assertFailsWith<BookingException> { service().createBooking(request()) }
+        val ex = assertFailsWith<BookingException> { service().createBooking(request(), "test-idempotency-key") }
 
         assertEquals(BookingFailureReason.OFFER_EXPIRED, ex.reason)
         wireMock.verify(0, postRequestedFor(urlPathEqualTo("/air/orders")))

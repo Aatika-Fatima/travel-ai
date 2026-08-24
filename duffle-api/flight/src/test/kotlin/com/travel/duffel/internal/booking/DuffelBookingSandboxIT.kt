@@ -65,7 +65,7 @@ class DuffelBookingSandboxIT {
                 paymentType = "balance",
             )
 
-        val result = bookingService.createBooking(request)
+        val result = bookingService.createBooking(request, "test-idempotency-key")
 
         assertTrue(result.orderId.isNotBlank())
         assertTrue(result.bookingReference.isNotBlank())

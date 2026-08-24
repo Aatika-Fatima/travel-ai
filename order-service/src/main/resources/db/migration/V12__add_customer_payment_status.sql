@@ -1,0 +1,2 @@
+ALTER TABLE orders
+    ADD COLUMN customer_payment_status VARCHAR(16) NOT NULL DEFAULT 'AWAITING_PAYMENT';

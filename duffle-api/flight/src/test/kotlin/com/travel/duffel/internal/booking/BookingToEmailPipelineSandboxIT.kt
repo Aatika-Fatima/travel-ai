@@ -74,7 +74,7 @@ class BookingToEmailPipelineSandboxIT {
                 paymentType = "balance",
             )
 
-        val bookingResult = bookingService.createBooking(request)
+        val bookingResult = bookingService.createBooking(request, "test-idempotency-key")
 
         assertTrue(bookingResult.orderId.isNotBlank())
         assertTrue(bookingResult.bookingReference.isNotBlank())

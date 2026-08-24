@@ -14,6 +14,11 @@ data class DuffelOrderRequestPayload(
     val passengers: List<DuffelOrderPassengerRequest>,
     val payments: List<DuffelPaymentRequest>,
     val type: String = "instant",
+    // order-service (§P8) stamps internal_order_id here on order creation --
+    // it's the only key guaranteed to already exist on both sides before
+    // Duffel's own order id is known, so it's what the order.created webhook
+    // and the reconciliation sweep both correlate back on.
+    val metadata: Map<String, String>? = null,
 )
 
 @JsonInclude(JsonInclude.Include.NON_NULL)
