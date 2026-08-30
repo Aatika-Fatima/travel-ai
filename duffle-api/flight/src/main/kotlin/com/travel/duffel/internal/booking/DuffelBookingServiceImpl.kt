@@ -17,12 +17,14 @@ import com.travel.duffel.api.dto.request.DuffelPaymentRequest
 import com.travel.duffel.api.dto.response.DuffelOffer
 import com.travel.duffel.api.dto.response.DuffelOrderData
 import com.travel.notification.api.outbox.BookingOutboxWriter
+import org.springframework.context.annotation.Profile
 import org.springframework.stereotype.Service
 import tools.jackson.module.kotlin.jacksonObjectMapper
 import java.time.Instant
 import java.util.UUID
 
 @Service
+@Profile("!demo")
 class DuffelBookingServiceImpl(
     private val duffelOrderClient: DuffelOrderClient,
     private val bookingOutboxWriter: BookingOutboxWriter,

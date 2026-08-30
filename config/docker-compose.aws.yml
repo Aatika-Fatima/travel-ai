@@ -44,7 +44,11 @@ services:
       - mailpit
     environment:
       JAVA_TOOL_OPTIONS: "-Xms192m -Xmx320m -XX:+ExitOnOutOfMemoryError"
-      SPRING_PROFILES_ACTIVE: aws
+      # `demo` swaps DuffelBookingServiceImpl for DemoDuffelBookingService --
+      # the Duffel/Travelport sandbox withdraws every offer within seconds of
+      # search, which makes a real end-to-end booking walkthrough impossible.
+      # Drop `,demo` to book against Duffel for real.
+      SPRING_PROFILES_ACTIVE: aws,demo
       SPRING_CONFIG_ADDITIONAL_LOCATION: "file:/config/"
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/travel
       SPRING_DATASOURCE_USERNAME: postgres
