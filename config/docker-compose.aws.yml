@@ -1,0 +1,71 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: travel
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+
+  kafka:
+    image: bitnami/kafka:3.8
+    environment:
+      - KAFKA_CFG_NODE_ID=0
+      - KAFKA_CFG_PROCESS_ROLES=controller,broker
+      - KAFKA_CFG_LISTENERS=PLAINTEXT://:9092,CONTROLLER://:9093
+      - KAFKA_CFG_ADVERTISED_LISTENERS=PLAINTEXT://kafka:9092
+      - KAFKA_CFG_CONTROLLER_QUORUM_VOTERS=0@kafka:9093
+      - KAFKA_CFG_CONTROLLER_LISTENER_NAMES=CONTROLLER
+      - KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP=CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT
+      - ALLOW_PLAINTEXT_LISTENER=yes
+      - KAFKA_HEAP_OPTS=-Xms256m -Xmx256m
+    volumes:
+      - kafka_data:/bitnami/kafka
+    restart: unless-stopped
+
+  mailpit:
+    image: axllent/mailpit:latest
+    restart: unless-stopped
+
+  app:
+    build:
+      context: ..
+      dockerfile: Dockerfile
+    depends_on:
+      - postgres
+      - redis
+      - kafka
+      - mailpit
+    environment:
+      JAVA_TOOL_OPTIONS: "-Xms192m -Xmx320m -XX:+ExitOnOutOfMemoryError"
+      SPRING_PROFILES_ACTIVE: aws
+      SPRING_CONFIG_ADDITIONAL_LOCATION: "file:/config/"
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/travel
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD}
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      MAIL_HOST: mailpit
+      MAIL_PORT: 1025
+      MISTRAL_API_KEY: ${MISTRAL_API_KEY}
+      DUFFEL_API_KEY: ${DUFFEL_API_KEY}
+      DUFFEL_WEBHOOK_SECRET: ${DUFFEL_WEBHOOK_SECRET}
+      RAZOR_PAY_API_KEY: ${RAZOR_PAY_API_KEY}
+      RAZOR_PAY_API_SECRET: ${RAZOR_PAY_API_SECRET}
+      RAZORPAY_WEBHOOK_SECRET: ${RAZORPAY_WEBHOOK_SECRET}
+    volumes:
+      - ./application-aws.yaml:/config/application-aws.yaml:ro
+    ports:
+      - "127.0.0.1:8090:8090"
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+  kafka_data:

@@ -11,14 +11,28 @@ interface AirportRepository : JpaRepository<AirportEntity, Long> {
 
     fun findByIataCode(iataCode: String): AirportEntity?
 
+    // Exact IATA code, then prefix match, then pg_trgm similarity — the trigram GIN indexes
+    // from V1__create_airports_table.sql exist for exactly this (typo/substring tolerant) fallback.
+    // Native query: pg_trgm's `%` operator and `similarity()` have no JPQL equivalent.
     @Query(
-        """
-        SELECT a FROM AirportEntity a
-        WHERE UPPER(a.iataCode) = UPPER(:term)
+        value = """
+        SELECT a.* FROM airports a
+        WHERE UPPER(a.iata_code) = UPPER(:term)
            OR UPPER(a.name) LIKE UPPER(CONCAT(:term, '%'))
-           OR UPPER(a.cityName) LIKE UPPER(CONCAT(:term, '%'))
-        ORDER BY CASE WHEN UPPER(a.iataCode) = UPPER(:term) THEN 0 ELSE 1 END, a.name
+           OR UPPER(a.city_name) LIKE UPPER(CONCAT(:term, '%'))
+           OR a.name % :term
+           OR a.city_name % :term
+        ORDER BY
+            CASE
+                WHEN UPPER(a.iata_code) = UPPER(:term) THEN 0
+                WHEN UPPER(a.name) LIKE UPPER(CONCAT(:term, '%'))
+                  OR UPPER(a.city_name) LIKE UPPER(CONCAT(:term, '%')) THEN 1
+                ELSE 2
+            END,
+            GREATEST(similarity(a.name, :term), similarity(COALESCE(a.city_name, ''), :term)) DESC,
+            a.name
         """,
+        nativeQuery = true,
     )
     fun search(
         @Param("term") term: String,

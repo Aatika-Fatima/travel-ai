@@ -79,7 +79,7 @@ function bestScore(offer, all) {
   return priceScore * 0.6 + durationScore * 0.4 + offer.stops * 0.05
 }
 
-export default function ResultsPage({ status, error, offers, onSelectOffer, onRetry }) {
+export default function ResultsPage({ status, error, offers, onSelectOffer, onRetry, embedded = false }) {
   const facets = useMemo(() => (offers.length ? buildFacets(offers) : null), [offers])
   const [filters, setFilters] = useState(null)
   const [sortBy, setSortBy] = useState('BEST')
@@ -91,9 +91,11 @@ export default function ResultsPage({ status, error, offers, onSelectOffer, onRe
     return sortOffers(applyFilters(offers, effectiveFilters), sortBy)
   }, [offers, effectiveFilters, sortBy])
 
+  const soloWrapClass = embedded ? 'w-full py-6' : 'mx-auto max-w-3xl px-4 py-8'
+
   if (status === 'loading') {
     return (
-      <div className="mx-auto max-w-3xl px-4 py-8">
+      <div className={soloWrapClass}>
         <LoadingSkeleton />
       </div>
     )
@@ -101,7 +103,7 @@ export default function ResultsPage({ status, error, offers, onSelectOffer, onRe
 
   if (status === 'error') {
     return (
-      <div className="mx-auto max-w-3xl px-4 py-8">
+      <div className={soloWrapClass}>
         <ErrorState message={error?.message} details={error?.details} onRetry={onRetry} />
       </div>
     )
@@ -109,7 +111,7 @@ export default function ResultsPage({ status, error, offers, onSelectOffer, onRe
 
   if (status === 'success' && offers.length === 0) {
     return (
-      <div className="mx-auto max-w-3xl px-4 py-8">
+      <div className={soloWrapClass}>
         <EmptyState />
       </div>
     )
@@ -118,14 +120,14 @@ export default function ResultsPage({ status, error, offers, onSelectOffer, onRe
   if (status !== 'success' || !facets || !effectiveFilters) return null
 
   return (
-    <div className="mx-auto flex max-w-6xl flex-col gap-6 px-4 py-8 md:flex-row">
+    <div className={`flex flex-col gap-6 md:flex-row ${embedded ? 'w-full py-6' : 'mx-auto max-w-6xl px-4 py-8'}`}>
       <FilterSidebar
         filters={effectiveFilters}
         facets={facets}
         onChange={(next) => setFilters(next ?? defaultFilters(facets))}
       />
 
-      <div className="flex-1">
+      <div className="min-w-0 flex-1">
         <SortBar value={sortBy} onChange={setSortBy} resultCount={visibleOffers.length} />
 
         {visibleOffers.length === 0 ? (

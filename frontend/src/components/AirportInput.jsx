@@ -106,7 +106,7 @@ export default function AirportInput({ label, value, onChange, placeholder }) {
           }}
           onFocus={() => setIsOpen(true)}
           onKeyDown={handleKeyDown}
-          className="mt-1 w-full border-0 border-b-2 border-transparent bg-transparent p-0 text-2xl font-bold uppercase tracking-wide text-brand-900 placeholder:text-slate-300 focus:border-accent-500 focus:outline-none focus:ring-0"
+          className="mt-1 w-full border-0 border-b-2 border-transparent bg-transparent p-0 text-[1.425rem] font-bold uppercase tracking-wide text-brand-900 placeholder:text-slate-300 focus:border-accent-500 focus:outline-none focus:ring-0"
         />
       </label>
 

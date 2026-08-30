@@ -1,8 +1,10 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import SearchForm from './components/SearchForm.jsx'
 import ResultsPage from './components/ResultsPage.jsx'
 import AssistantPanel from './components/AssistantPanel.jsx'
 import BookingPage from './components/BookingPage.jsx'
+import ThemeToggle from './components/ThemeToggle.jsx'
+import PortfolioHome from './components/portfolio/PortfolioHome.jsx'
 import { searchFlights } from './api/searchApi.js'
 
 const INITIAL_CRITERIA = {
@@ -30,7 +32,19 @@ function toSearchRequest(criteria) {
   }
 }
 
+function useTheme() {
+  const [theme, setTheme] = useState(() => localStorage.getItem('skyfare-theme') || 'skyfare')
+
+  useEffect(() => {
+    document.documentElement.dataset.theme = theme
+    localStorage.setItem('skyfare-theme', theme)
+  }, [theme])
+
+  return [theme, setTheme]
+}
+
 export default function App() {
+  const [theme, setTheme] = useTheme()
   const [criteria, setCriteria] = useState(INITIAL_CRITERIA)
   const [hasSearched, setHasSearched] = useState(false)
   const [status, setStatus] = useState('idle')
@@ -75,17 +89,51 @@ export default function App() {
     runSearch(nextCriteria)
   }
 
+  const goHome = () => {
+    setSelectedOffer(null)
+    setHasSearched(false)
+    setStatus('idle')
+    setError(null)
+  }
+
   if (selectedOffer) {
     return (
       <div className="min-h-screen bg-slate-50">
         <div className="bg-brand-900 px-4 py-4">
-          <div className="mx-auto flex max-w-6xl items-center gap-2 text-white">
-            <span className="text-2xl">✈️</span>
-            <span className="text-xl font-extrabold tracking-tight">SkyFare</span>
+          <div className="mx-auto flex max-w-6xl items-center justify-between gap-2">
+            <button type="button" onClick={goHome} className="flex items-center gap-2 text-white">
+              <span className="text-2xl">✈️</span>
+              <span className="text-xl font-extrabold tracking-tight">SkyFare</span>
+            </button>
+            <ThemeToggle theme={theme} onChange={setTheme} dark />
           </div>
         </div>
         <BookingPage offer={selectedOffer} passengers={criteria.passengers} onBackToResults={() => setSelectedOffer(null)} />
       </div>
+    )
+  }
+
+  // The portfolio theme keeps its own page shell (bio, AI assistant
+  // sidebar, tech-stack footer) for search AND results -- results replace
+  // the promo content in the center column instead of navigating to a
+  // separate page. Booking/payment still hand off to the shared flow below
+  // once an offer is actually selected (see the `selectedOffer` branch).
+  if (theme === 'portfolio') {
+    return (
+      <PortfolioHome
+        theme={theme}
+        onThemeChange={setTheme}
+        criteria={criteria}
+        onChange={setCriteria}
+        onSubmit={runSearch}
+        onAssistantAction={handleAssistantAction}
+        hasSearched={hasSearched}
+        status={status}
+        offers={offers}
+        error={error}
+        onRetry={runSearch}
+        onSelectOffer={(offer) => setSelectedOffer(offer)}
+      />
     )
   }
 
@@ -97,17 +145,20 @@ export default function App() {
         <header className={`bg-brand-900 ${hasSearched ? 'pb-6 pt-6' : 'pb-20 pt-10'}`}>
           <div className="mx-auto max-w-6xl px-4">
             <div className="mb-6 flex items-center justify-between text-white">
-              <div className="flex items-center gap-2">
+              <button type="button" onClick={goHome} className="flex items-center gap-2">
                 <span className="text-2xl">✈️</span>
                 <span className="text-xl font-extrabold tracking-tight">SkyFare</span>
-              </div>
-              <button
-                type="button"
-                onClick={() => setIsAssistantOpen(true)}
-                className="flex items-center gap-1.5 rounded-full border border-white/20 bg-white/10 px-4 py-1.5 text-sm font-semibold text-white transition-colors hover:bg-white/20"
-              >
-                <span>✨</span> Ask AI
               </button>
+              <div className="flex items-center gap-3">
+                <ThemeToggle theme={theme} onChange={setTheme} dark />
+                <button
+                  type="button"
+                  onClick={() => setIsAssistantOpen(true)}
+                  className="flex items-center gap-1.5 rounded-full border border-white/20 bg-white/10 px-4 py-1.5 text-sm font-semibold text-white transition-colors hover:bg-white/20"
+                >
+                  <span>✨</span> Ask AI
+                </button>
+              </div>
             </div>
 
             {!hasSearched && (

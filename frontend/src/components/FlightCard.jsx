@@ -26,7 +26,7 @@ function SliceRow({ slice }) {
 
       <div className="flex flex-1 items-center gap-3">
         <div className="text-center">
-          <div className="text-lg font-bold text-brand-900">{formatTime(slice.departureTime)}</div>
+          <div className="text-[1.069rem] font-bold text-brand-900">{formatTime(slice.departureTime)}</div>
           <div className="text-xs text-slate-500">{slice.origin.iataCode}</div>
         </div>
 
@@ -39,7 +39,7 @@ function SliceRow({ slice }) {
         </div>
 
         <div className="text-center">
-          <div className="text-lg font-bold text-brand-900">{formatTime(slice.arrivalTime)}</div>
+          <div className="text-[1.069rem] font-bold text-brand-900">{formatTime(slice.arrivalTime)}</div>
           <div className="text-xs text-slate-500">{slice.destination.iataCode}</div>
         </div>
       </div>
@@ -58,7 +58,7 @@ export default function FlightCard({ offer, onSelect }) {
         </div>
 
         <div className="flex shrink-0 flex-col items-end gap-2 border-t border-slate-100 pt-3 md:border-t-0 md:border-l md:pl-5 md:pt-0">
-          <div className="text-2xl font-extrabold text-brand-900">{formatPrice(offer.price.amount, offer.price.currency)}</div>
+          <div className="text-[1.425rem] font-extrabold text-brand-900">{formatPrice(offer.price.amount, offer.price.currency)}</div>
           <div className="flex gap-1.5">
             {offer.refundable && <Badge tone="green">Refundable</Badge>}
             {offer.baggageAllowance && <Badge>{offer.baggageAllowance}</Badge>}

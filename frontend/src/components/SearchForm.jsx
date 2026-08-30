@@ -7,7 +7,7 @@ function SwapButton({ onClick }) {
       type="button"
       onClick={onClick}
       aria-label="Swap origin and destination"
-      className="mx-3 flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-slate-200 bg-white text-brand-900 shadow-sm transition-transform hover:rotate-180 hover:border-accent-500 hover:text-accent-500"
+      className="mx-6 flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-slate-200 bg-white text-brand-900 shadow-sm transition-transform hover:rotate-180 hover:border-accent-500 hover:text-accent-500"
     >
       ⇄
     </button>

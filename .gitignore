@@ -1,6 +1,7 @@
 HELP.md
 target/
 .env
+config/.env.aws
 app.pid
 app-stdout.log
 app-stderr.log

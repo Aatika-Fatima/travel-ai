@@ -11,7 +11,7 @@ export default function SortBar({ value, onChange, resultCount }) {
       <div className="text-sm text-slate-500">
         <span className="font-bold text-brand-900">{resultCount}</span> flights found
       </div>
-      <div className="flex gap-1 rounded-full bg-slate-100 p-1">
+      <div className="flex flex-wrap gap-1 rounded-2xl bg-slate-100 p-1">
         {SORT_OPTIONS.map((option) => (
           <button
             key={option.id}

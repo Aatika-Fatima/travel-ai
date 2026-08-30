@@ -1,5 +1,9 @@
 @import "tailwindcss";
 
+/* Default (SkyFare) palette -- overridden per-token below for the
+   "portfolio" theme. Every component styles itself with brand and accent
+   utility classes only, never a literal color, so re-pointing these custom
+   properties is the entire theme switch. */
 @theme {
   --color-brand-950: #0a0c33;
   --color-brand-900: #0f1245;
@@ -16,6 +20,23 @@
   --font-sans: "Inter", "Segoe UI", system-ui, -apple-system, sans-serif;
 }
 
+/* "Portfolio" theme -- matches docs/portfolio.png (blue header/footer,
+   blue call-to-action buttons, in place of SkyFare's navy/crimson). Set via
+   data-theme="portfolio" on <html>, toggled and persisted in App.jsx. */
+:root[data-theme="portfolio"] {
+  --color-brand-950: #081a33;
+  --color-brand-900: #0e2c56;
+  --color-brand-800: #123a70;
+  --color-brand-700: #1a4f92;
+  --color-brand-100: #e3f0ff;
+  --color-brand-50: #f3f9ff;
+
+  --color-accent-600: #1257b3;
+  --color-accent-500: #1e88e5;
+  --color-accent-400: #4fa3ec;
+  --color-accent-50: #eaf5ff;
+}
+
 html {
   font-family: var(--font-sans);
 }
@@ -27,4 +48,26 @@ html {
 .scroll-thin::-webkit-scrollbar-thumb {
   background-color: var(--color-brand-100);
   border-radius: 9999px;
+}
+
+/* Dot traveling down the connector lines in the Architecture diagram --
+   implies live data/event flow between layers. */
+@keyframes flow-down {
+  0% {
+    top: 0%;
+    opacity: 0;
+  }
+  15% {
+    opacity: 1;
+  }
+  85% {
+    opacity: 1;
+  }
+  100% {
+    top: 100%;
+    opacity: 0;
+  }
+}
+.animate-flow-down {
+  animation: flow-down 1.8s ease-in-out infinite;
 }
