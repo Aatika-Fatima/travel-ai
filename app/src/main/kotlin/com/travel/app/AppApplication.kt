@@ -4,7 +4,6 @@ import org.springframework.boot.autoconfigure.SpringBootApplication
 import org.springframework.boot.persistence.autoconfigure.EntityScan
 import org.springframework.boot.runApplication
 import org.springframework.context.annotation.ComponentScan
-import org.springframework.data.elasticsearch.repository.config.EnableElasticsearchRepositories
 import org.springframework.data.jpa.repository.config.EnableJpaRepositories
 import org.springframework.retry.annotation.EnableRetry
 import org.springframework.scheduling.annotation.EnableScheduling
@@ -46,7 +45,6 @@ import org.springframework.scheduling.annotation.EnableScheduling
         "com.travel.orderservice.internal.persistence",
     ],
 )
-@EnableElasticsearchRepositories(basePackages = ["com.travel.duffel.internal.airport.document"])
 class AppApplication
 
 fun main(args: Array<String>) {

@@ -1,3 +1,15 @@
+spring:
+  # Elasticsearch is not deployed in this profile (see docs/amazon.html P1). The repository scan is
+  # already gated off via AirportElasticSearchConfig(@Profile("!aws")); these excludes stop Spring Boot
+  # from also standing up an ES client / data layer that would sit idle pointing at a dead address.
+  autoconfigure:
+    exclude:
+      - org.springframework.boot.elasticsearch.autoconfigure.ElasticsearchClientAutoConfiguration
+      - org.springframework.boot.elasticsearch.autoconfigure.ElasticsearchRestClientAutoConfiguration
+      - org.springframework.boot.data.elasticsearch.autoconfigure.DataElasticsearchAutoConfiguration
+      - org.springframework.boot.data.elasticsearch.autoconfigure.DataElasticsearchRepositoriesAutoConfiguration
+      - org.springframework.boot.data.elasticsearch.autoconfigure.DataElasticsearchReactiveRepositoriesAutoConfiguration
+
 management:
   health:
     elasticsearch:

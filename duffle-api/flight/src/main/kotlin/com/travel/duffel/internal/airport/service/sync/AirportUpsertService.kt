@@ -29,7 +29,9 @@ data class PageUpsertResult(
 class AirportUpsertService(
     private val airportRepository: AirportRepository,
     private val syncStateRepository: AirportSyncStateRepository,
-    private val airportDocumentRepository: AirportDocumentRepository,
+    // Absent under the `aws` profile, where Elasticsearch is not deployed (see AirportElasticSearchConfig).
+    // Only the unused indexOrLog() path touches it; the live sync writes go to Postgres.
+    private val airportDocumentRepository: AirportDocumentRepository? = null,
 ) {
 
     private val log = LoggerFactory.getLogger(javaClass)  // new
@@ -99,8 +101,9 @@ class AirportUpsertService(
     }
 
     private fun indexOrLog(entity:AirportEntity){
+        val documentRepository = airportDocumentRepository ?: return
         runCatching{
-            airportDocumentRepository.save(AirportDocumentMapper.toDocument(entity))
+            documentRepository.save(AirportDocumentMapper.toDocument(entity))
         }.onFailure{
             log.warn("Elasticsearch index write failed for {}: {}", entity.iataCode, it.message)
         }
