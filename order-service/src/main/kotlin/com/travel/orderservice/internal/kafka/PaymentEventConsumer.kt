@@ -27,6 +27,14 @@ class PaymentEventConsumer(private val orders: OrderRepository) {
     // is, in this saga, order-service's own order id -- see the boundary
     // note in booking_service.html §Boundary notes for why the name
     // doesn't mean what it says at first glance.
+    //
+    // @Transactional / @Retryable live here, on the proxied listener entry
+    // point, not on markCaptured: markCaptured is a plain in-class call, so
+    // annotating it did nothing (self-invocation bypasses the proxy) and
+    // markCaptured ran with no session -- getReferenceById's lazy proxy
+    // then threw LazyInitializationException on the first field access.
+    @Retryable(retryFor = [ObjectOptimisticLockingFailureException::class], maxAttempts = 4, backoff = Backoff(delay = 50, multiplier = 2.0))
+    @Transactional
     fun onPaymentEvent(payload: String, ack: Acknowledgment) {
         val event = mapper.readValue(payload, PaymentEventPayload::class.java)
         if (event.eventType == "payment.captured") {
@@ -38,8 +46,6 @@ class PaymentEventConsumer(private val orders: OrderRepository) {
         ack.acknowledge()
     }
 
-    @Retryable(retryFor = [ObjectOptimisticLockingFailureException::class], maxAttempts = 4, backoff = Backoff(delay = 50, multiplier = 2.0))
-    @Transactional
     fun markCaptured(orderId: Uuid) {
         val order = orders.getReferenceById(orderId)
         // Redelivery-safe by construction: applying PAID on top of PAID is a

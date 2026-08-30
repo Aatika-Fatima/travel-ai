@@ -1,6 +1,5 @@
 const CHANNELS = [
   { icon: '✉️', label: 'Email', value: 'aatika08@gmail.com', href: 'mailto:aatika08@gmail.com' },
-  { icon: '📞', label: 'Phone', value: '+91 89778 13009', href: 'tel:+918977813009' },
   { icon: '💼', label: 'LinkedIn', value: 'linkedin.com/in/aatikafatima', href: 'https://linkedin.com/in/aatikafatima' },
   { icon: '🐙', label: 'GitHub', value: 'github.com/Aatika-Fatima', href: 'https://github.com/Aatika-Fatima?tab=repositories' },
 ]

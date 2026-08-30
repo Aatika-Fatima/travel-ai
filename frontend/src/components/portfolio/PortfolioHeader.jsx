@@ -10,7 +10,6 @@ const NAV_ITEMS = [
   { label: 'Architecture', href: '#architecture' },
   { label: 'C4 Diagram', href: '#c4-diagram' },
   { label: 'Experience', href: '#experience' },
-  { label: 'Blog', href: '#' },
   { label: 'Contact', href: '#contact' },
 ]
 
