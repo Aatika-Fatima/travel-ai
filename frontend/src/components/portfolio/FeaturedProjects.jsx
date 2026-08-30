@@ -19,14 +19,6 @@ const PROJECTS = [
   },
 ]
 
-const EDUCATION = [
-  {
-    degree: 'Bachelor of Computer Science & Engineering',
-    school: 'Osmania University, Hyderabad, India',
-    note: 'Sep 2004 -- May 2008',
-  },
-]
-
 export default function FeaturedProjects() {
   return (
     <section id="featured-projects" className="scroll-mt-24 rounded-2xl border border-slate-100 bg-white p-5 shadow-sm">
@@ -56,21 +48,6 @@ export default function FeaturedProjects() {
             </div>
           </div>
         ))}
-      </div>
-
-      <div className="mt-5 border-t border-slate-100 pt-4">
-        <h4 className="mb-2 text-xs font-bold uppercase tracking-wide text-slate-400">Academic Background</h4>
-        {EDUCATION.map((entry) => (
-          <div key={entry.degree} className="text-sm">
-            <div className="font-semibold text-brand-900">{entry.degree}</div>
-            <div className="text-xs text-slate-500">
-              {entry.school} · {entry.note}
-            </div>
-          </div>
-        ))}
-        <div className="mt-2 text-xs text-slate-500">
-          <span className="font-semibold text-brand-900">Certification:</span> AWS Certified Developer Associate
-        </div>
       </div>
     </section>
   )

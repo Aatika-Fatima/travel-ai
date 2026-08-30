@@ -1,3 +1,12 @@
+server:
+  # The app runs behind Caddy (TLS terminated there, reverse-proxied to plain
+  # http on 127.0.0.1:8090). Without this, Spring rebuilds request URLs as
+  # http://127.0.0.1:8090 and a browser's same-origin "Origin:
+  # https://www.aatikatechstack.com" header looks cross-origin to CorsFilter,
+  # which then 403s /api/** calls ("Invalid CORS request"). Trusting Caddy's
+  # X-Forwarded-* headers makes Spring see the real external scheme/host.
+  forward-headers-strategy: framework
+
 spring:
   # Elasticsearch is not deployed in this profile (see docs/amazon.html P1). The repository scan is
   # already gated off via AirportElasticSearchConfig(@Profile("!aws")); these excludes stop Spring Boot

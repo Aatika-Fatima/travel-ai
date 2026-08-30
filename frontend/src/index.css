@@ -1,29 +1,11 @@
 @import "tailwindcss";
 
-/* Default (SkyFare) palette -- overridden per-token below for the
-   "portfolio" theme. Every component styles itself with brand and accent
-   utility classes only, never a literal color, so re-pointing these custom
-   properties is the entire theme switch. */
+/* Portfolio palette -- blue header/footer and call-to-action buttons, matching
+   docs/portfolio.png. Every component styles itself with brand and accent
+   utility classes only, never a literal color, so these custom properties are
+   the single source of truth for the palette. (The old SkyFare navy/crimson
+   theme and its data-theme toggle were removed -- the site is portfolio-only.) */
 @theme {
-  --color-brand-950: #0a0c33;
-  --color-brand-900: #0f1245;
-  --color-brand-800: #171b5c;
-  --color-brand-700: #232875;
-  --color-brand-100: #e8e9f7;
-  --color-brand-50: #f4f4fc;
-
-  --color-accent-600: #c2143d;
-  --color-accent-500: #e01f4c;
-  --color-accent-400: #ec4a71;
-  --color-accent-50: #fdecf0;
-
-  --font-sans: "Inter", "Segoe UI", system-ui, -apple-system, sans-serif;
-}
-
-/* "Portfolio" theme -- matches docs/portfolio.png (blue header/footer,
-   blue call-to-action buttons, in place of SkyFare's navy/crimson). Set via
-   data-theme="portfolio" on <html>, toggled and persisted in App.jsx. */
-:root[data-theme="portfolio"] {
   --color-brand-950: #081a33;
   --color-brand-900: #0e2c56;
   --color-brand-800: #123a70;
@@ -35,6 +17,8 @@
   --color-accent-500: #1e88e5;
   --color-accent-400: #4fa3ec;
   --color-accent-50: #eaf5ff;
+
+  --font-sans: "Inter", "Segoe UI", system-ui, -apple-system, sans-serif;
 }
 
 html {

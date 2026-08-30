@@ -11,7 +11,7 @@ export default function BioSidebar() {
         </div>
       </div>
 
-      <p className="text-sm font-semibold text-slate-500">Java Backend Engineer</p>
+      <p className="text-sm font-semibold text-slate-500">Backend Engineer | Distributed Systems | AI</p>
 
       <p className="line-clamp-2 text-sm leading-relaxed text-slate-600">
         I build scalable, secure and user-centric backend systems that solve real-world problems. I combine clean

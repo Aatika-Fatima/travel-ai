@@ -5,20 +5,17 @@ import BioSidebar from './BioSidebar.jsx'
 import SearchFlightsCard from './SearchFlightsCard.jsx'
 import PopularRoutes from './PopularRoutes.jsx'
 import FeatureHighlights from './FeatureHighlights.jsx'
+import PlatformSection from './PlatformSection.jsx'
 import FeaturedProjects from './FeaturedProjects.jsx'
 import AIAssistantSidebar from './AIAssistantSidebar.jsx'
 import AboutSection from './AboutSection.jsx'
 import SkillsSection from './SkillsSection.jsx'
-import ArchitectureSection from './ArchitectureSection.jsx'
-import C4DiagramSection from './C4DiagramSection.jsx'
 import ExperienceSection from './ExperienceSection.jsx'
 import ContactSection from './ContactSection.jsx'
 import TechStackFooter from './TechStackFooter.jsx'
 import ResultsPage from '../ResultsPage.jsx'
 
 export default function PortfolioHome({
-  theme,
-  onThemeChange,
   criteria,
   onChange,
   onSubmit,
@@ -34,7 +31,7 @@ export default function PortfolioHome({
 
   return (
     <div className="flex min-h-screen flex-col bg-slate-50">
-      <PortfolioHeader theme={theme} onThemeChange={onThemeChange} />
+      <PortfolioHeader />
       <SocialSidebar />
 
       <main className="mx-auto grid w-full max-w-7xl flex-1 grid-cols-1 gap-5 px-4 py-6 lg:grid-cols-[280px_minmax(0,1fr)]">
@@ -67,17 +64,18 @@ export default function PortfolioHome({
             <>
               <PopularRoutes onSelect={(origin, destination) => onChange({ ...criteria, origin, destination })} />
               <FeatureHighlights />
-              <FeaturedProjects />
             </>
           )}
         </div>
       </main>
 
+      {/* Full-width sections -- same max-w-7xl / px-4 as <main> so Platform,
+          Projects and About all line up edge to edge. */}
       <div className="mx-auto flex w-full max-w-7xl flex-col gap-5 px-4 pb-6">
+        <PlatformSection />
+        <FeaturedProjects />
         <AboutSection />
         <SkillsSection />
-        <ArchitectureSection />
-        <C4DiagramSection />
         <ExperienceSection />
         <ContactSection />
       </div>

@@ -1,0 +1,990 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>FlyStack — Architecture</title>
+<style>
+  :root {
+    --bg: #f3f9ff;
+    --surface: #ffffff;
+    --surface-alt: #eaf3ff;
+    --ink: #0e2c56;
+    --ink-soft: #3f5b82;
+    --muted: #6b7c99;
+    --border: #d6e6fb;
+    --brand: #0e2c56;
+    --brand-800: #123a70;
+    --accent: #1e88e5;
+    --accent-soft: #e3f0ff;
+    --good: #16794f;
+    --warn: #a35a12;
+    --code-bg: #0b1f3a;
+    --code-ink: #dbe9ff;
+    --shadow: 0 1px 2px rgba(14, 44, 86, 0.06), 0 10px 30px -14px rgba(14, 44, 86, 0.22);
+    --rail-w: 264px;
+    --header-h: 62px;
+  }
+  * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; scroll-behavior: smooth; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: "Inter", "Segoe UI", system-ui, -apple-system, sans-serif;
+    line-height: 1.6;
+    font-size: 15px;
+  }
+  a { color: var(--accent); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  code, .mono {
+    font-family: ui-monospace, "Cascadia Code", "SF Mono", Consolas, monospace;
+    font-size: 0.88em;
+  }
+  code {
+    background: var(--surface-alt);
+    border: 1px solid var(--border);
+    padding: 1px 5px;
+    border-radius: 5px;
+    color: var(--brand-800);
+  }
+  p { margin: 0.8em 0; max-width: 68ch; }
+  h2 { font-size: clamp(20px, 3vw, 27px); letter-spacing: -0.02em; margin: 0 0 4px; }
+  h3 { font-size: 15px; margin: 26px 0 8px; letter-spacing: -0.01em; }
+  ul, ol { margin: 0.7em 0; padding-left: 1.3em; max-width: 68ch; }
+  li { margin: 0.35em 0; }
+
+  /* ---------- site header (mirrors the portfolio's PortfolioHeader) ---------- */
+  .site-header {
+    position: sticky;
+    top: 0;
+    z-index: 30;
+    background: linear-gradient(to right, #0e2c56, #1e88e5);
+    padding: 11px 16px;
+    box-shadow: 0 4px 6px -1px rgba(14, 44, 86, 0.18);
+  }
+  .sh-inner {
+    max-width: 1240px;
+    margin: 0 auto;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+  }
+  .sh-brand { display: flex; align-items: center; gap: 8px; color: #fff; text-decoration: none; }
+  .sh-brand:hover { text-decoration: none; }
+  .sh-brand .rocket { font-size: 22px; }
+  .sh-brand-text { display: flex; flex-direction: column; line-height: 1.15; }
+  .sh-brand .name { font-size: 18px; font-weight: 800; letter-spacing: -0.02em; }
+  .sh-brand .name .light { font-weight: 300; color: rgba(255, 255, 255, 0.8); }
+  .sh-brand .role { font-size: 11px; color: rgba(255, 255, 255, 0.7); }
+  .sh-nav {
+    order: 3;
+    width: 100%;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    overflow-x: auto;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 999px;
+    padding: 4px;
+  }
+  .sh-nav a {
+    flex-shrink: 0;
+    white-space: nowrap;
+    border-radius: 999px;
+    padding: 6px 14px;
+    font-size: 14px;
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.85);
+    text-decoration: none;
+    transition: background-color 0.14s, color 0.14s;
+  }
+  .sh-nav a:hover { color: #fff; text-decoration: none; }
+  .sh-nav a.current { background: #fff; color: #0e2c56; box-shadow: 0 1px 2px rgba(14, 44, 86, 0.12); }
+  .sh-cta {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    border-radius: 999px;
+    padding: 6px 12px;
+    background: rgba(255, 255, 255, 0.1);
+    color: #fff;
+    font-size: 14px;
+    font-weight: 600;
+    text-decoration: none;
+    transition: background-color 0.14s;
+  }
+  .sh-cta:hover { background: rgba(255, 255, 255, 0.2); text-decoration: none; }
+  @media (min-width: 1024px) {
+    .sh-nav { order: 0; width: auto; overflow: visible; }
+  }
+
+  .shell { display: grid; grid-template-columns: var(--rail-w) minmax(0, 1fr); max-width: 1240px; margin: 0 auto; min-height: calc(100vh - var(--header-h)); }
+
+  /* ---------- rail ---------- */
+  .rail {
+    position: sticky;
+    top: var(--header-h);
+    align-self: start;
+    height: calc(100vh - var(--header-h));
+    overflow-y: auto;
+    padding: 26px 14px 40px 22px;
+    border-right: 1px solid var(--border);
+    background: var(--surface);
+  }
+  .rail-back {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--muted);
+    margin-bottom: 22px;
+  }
+  .rail-title {
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 0.22em;
+    color: var(--accent);
+    margin-bottom: 14px;
+  }
+  .nav-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 1px; }
+  .nav-link {
+    display: flex;
+    gap: 10px;
+    align-items: baseline;
+    padding: 8px 10px;
+    border-radius: 8px;
+    color: var(--ink-soft);
+    font-size: 13.5px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background-color 0.14s, color 0.14s;
+  }
+  .nav-link:hover { background: var(--surface-alt); text-decoration: none; color: var(--brand); }
+  .nav-link .num {
+    font-family: ui-monospace, Consolas, monospace;
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--muted);
+    min-width: 18px;
+  }
+  .nav-link.active { background: var(--brand); color: #fff; font-weight: 600; }
+  .nav-link.active .num { color: rgba(255, 255, 255, 0.6); }
+
+  /* ---------- main ---------- */
+  main { padding: 44px clamp(20px, 5vw, 64px) 90px; min-width: 0; }
+  .eyebrow { font-size: 11px; font-weight: 800; letter-spacing: 0.2em; color: var(--accent); margin-bottom: 10px; }
+  .lede { color: var(--ink-soft); font-size: 16px; max-width: 66ch; }
+
+  .panel { display: none; animation: fade 0.22s ease; }
+  .panel.active { display: block; }
+  @keyframes fade { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 16px 18px;
+    box-shadow: var(--shadow);
+    margin: 14px 0;
+  }
+  .grid { display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); margin: 14px 0; }
+  .tile { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 13px 15px; }
+  .tile h4 { margin: 0 0 4px; font-size: 13.5px; color: var(--brand); }
+  .tile p { margin: 0; font-size: 12.5px; color: var(--muted); max-width: none; }
+  .tile .ic { font-size: 18px; }
+
+  .pill {
+    display: inline-block;
+    background: var(--accent-soft);
+    color: var(--brand-800);
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    padding: 2px 9px;
+    font-size: 11px;
+    font-weight: 600;
+    margin: 2px 3px 2px 0;
+  }
+  .pill.pub { background: var(--accent); color: #fff; border-color: var(--accent); }
+  .pill.con { background: #fff; color: var(--accent); }
+
+  .callout {
+    border-left: 3px solid var(--accent);
+    background: var(--accent-soft);
+    border-radius: 8px;
+    padding: 11px 15px;
+    margin: 16px 0;
+    font-size: 13.5px;
+    color: var(--brand-800);
+    max-width: 68ch;
+  }
+  .callout.warn { border-color: var(--warn); background: #fbf1e4; color: var(--warn); }
+
+  pre.code {
+    background: var(--code-bg);
+    color: var(--code-ink);
+    border-radius: 10px;
+    padding: 14px 16px;
+    overflow-x: auto;
+    font-size: 12.5px;
+    line-height: 1.6;
+    margin: 14px 0;
+  }
+
+  table { width: 100%; border-collapse: collapse; font-size: 13px; margin: 14px 0; background: var(--surface); border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
+  th { text-align: left; background: var(--surface-alt); color: var(--ink-soft); font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; padding: 9px 13px; border-bottom: 1px solid var(--border); }
+  td { padding: 9px 13px; border-bottom: 1px solid var(--border); vertical-align: top; }
+  tr:last-child td { border-bottom: none; }
+  .table-wrap { overflow-x: auto; }
+
+  /* flow diagram */
+  .flow { display: flex; flex-direction: column; gap: 0; margin: 16px 0; }
+  .flow-step { display: flex; gap: 14px; }
+  .flow-rail { display: flex; flex-direction: column; align-items: center; }
+  .flow-dot { width: 30px; height: 30px; border-radius: 50%; background: var(--brand); color: #fff; font-weight: 700; font-size: 13px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .flow-line { width: 2px; flex: 1; background: var(--border); min-height: 14px; }
+  .flow-step:last-child .flow-line { display: none; }
+  .flow-body { padding-bottom: 18px; }
+  .flow-body .t { font-weight: 700; font-size: 14px; color: var(--brand); }
+  .flow-body .a { font-size: 12px; font-weight: 600; color: var(--accent); }
+  .flow-body p { margin: 4px 0 6px; font-size: 13px; }
+
+  footer { border-top: 1px solid var(--border); padding: 20px clamp(20px, 5vw, 64px); font-size: 12px; color: var(--muted); }
+
+  /* mermaid diagrams */
+  .diagram {
+    overflow-x: auto;
+    margin: 16px 0;
+    padding: 10px 12px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    box-shadow: var(--shadow);
+  }
+  .diagram .mermaid { text-align: center; }
+  .diagram .mermaid svg { max-width: 100%; height: auto; }
+  /* wide horizontal diagrams: render at a legible size and scroll instead of shrinking to fit */
+  .diagram.wide .mermaid { min-width: 1120px; }
+  .diagram.wide .mermaid svg { max-width: none; }
+  .dcaption { font-size: 12px; color: var(--muted); margin: -4px 0 18px; max-width: 68ch; }
+
+  @media (max-width: 880px) {
+    .shell { grid-template-columns: 1fr; }
+    .rail { position: static; height: auto; border-right: none; border-bottom: 1px solid var(--border); }
+    .nav-list { flex-direction: row; flex-wrap: wrap; }
+    .nav-link { font-size: 12.5px; padding: 6px 9px; }
+    main { padding: 28px 20px 70px; }
+  }
+</style>
+</head>
+<body>
+<header class="site-header">
+  <div class="sh-inner">
+    <a class="sh-brand" href="/">
+      <span class="rocket">🚀</span>
+      <span class="sh-brand-text">
+        <span class="name">Aatika <span class="light">FlyStack</span></span>
+        <span class="role">Backend Engineer | Distributed Systems | AI</span>
+      </span>
+    </a>
+    <nav class="sh-nav" aria-label="Site">
+      <a href="/">Home</a>
+      <a href="/#platform">Platform</a>
+      <a href="/architecture.html" class="current" aria-current="page">Architecture</a>
+      <a href="/#featured-projects">Projects</a>
+      <a href="/#about">About</a>
+    </nav>
+    <a class="sh-cta" href="/resume.pdf" download="Aatika_Fatima_Resume.pdf" aria-label="Download résumé">
+      <svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16" aria-hidden="true"><path d="M12 3a1 1 0 0 1 1 1v9.59l2.3-2.3a1 1 0 1 1 1.4 1.42l-4 4a1 1 0 0 1-1.4 0l-4-4a1 1 0 1 1 1.4-1.42l2.3 2.3V4a1 1 0 0 1 1-1ZM5 19a1 1 0 0 1 1-1h12a1 1 0 1 1 0 2H6a1 1 0 0 1-1-1Z"/></svg>
+      <span>Resume</span>
+    </a>
+  </div>
+</header>
+<div class="shell">
+  <nav class="rail" aria-label="Architecture sections">
+    <div class="rail-title">ARCHITECTURE</div>
+    <ul class="nav-list" id="navList"></ul>
+  </nav>
+
+  <main id="main"></main>
+</div>
+<footer>
+  FlyStack &middot; modular-monolith travel platform &middot; Kotlin / Spring Boot 4 / Kafka / PostgreSQL &middot;
+  deployed on a single AWS free-tier instance behind Caddy.
+</footer>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mermaid/11.3.0/mermaid.min.js"></script>
+<script>
+const SECTIONS = [
+  {
+    id: "system-overview",
+    title: "System Overview",
+    lede: "One deployable JVM, several independently-boundaried services, wired together over Kafka.",
+    html: `
+      <p>FlyStack is a <strong>modular monolith</strong>: each domain (flight, booking, order, payment, notification, AI) lives in
+      its own Maven module with its own package root, and the <code>app</code> module assembles them into a single Spring Boot
+      process. <strong>ArchUnit</strong> tests fail the build if one module reaches into another's internals, so the boundaries
+      that would matter for a future split are enforced from day one &mdash; without paying the operational cost of running six
+      services for an audience of a few requests a day.</p>
+
+      <div class="grid">
+        <div class="tile"><div class="ic">🧩</div><h4>Modular</h4><p>7 domain modules + <code>common</code>, boundaries enforced by ArchUnit.</p></div>
+        <div class="tile"><div class="ic">⚙️</div><h4>One runtime</h4><p>The <code>app</code> module runs everything in one JVM (heap-capped for a 1&nbsp;GiB box).</p></div>
+        <div class="tile"><div class="ic">📡</div><h4>Event-driven</h4><p>Cross-module work flows over Kafka (three saga topics + a two-topic notification pipeline), never direct calls.</p></div>
+        <div class="tile"><div class="ic">🐘</div><h4>One database</h4><p>PostgreSQL 16, per-domain tables, 13 Flyway migrations.</p></div>
+      </div>
+
+      <h3>Stack</h3>
+      <p>
+        <span class="pill">Kotlin</span><span class="pill">Spring Boot 4</span><span class="pill">Spring AI</span>
+        <span class="pill">Apache Kafka (KRaft)</span><span class="pill">PostgreSQL 16</span><span class="pill">Redis 7</span>
+        <span class="pill">Flyway</span><span class="pill">Docker Compose</span><span class="pill">Caddy</span>
+        <span class="pill">React + Vite</span><span class="pill">ArchUnit</span>
+      </p>
+
+      <div class="callout">Read this page top to bottom for the full picture, or jump straight to
+      <a href="#booking-saga">Booking Saga</a> for the part worth showing off.</div>
+    `,
+  },
+  {
+    id: "c4-model",
+    title: "C4 Model",
+    lede: "The whole system at three zoom levels — context, containers, then the modules inside the one JVM.",
+    html: `
+      <h3>Level 1 &mdash; System Context</h3>
+      <p>Who uses FlyStack and which third parties it depends on.</p>
+      <div class="diagram"><pre class="mermaid">
+C4Context
+  title System Context — FlyStack
+  Person(traveler, "Traveler", "Searches, books, pays")
+  System(flystack, "FlyStack", "Travel platform: search, booking saga, payments, AI assistant")
+  System_Ext(duffel, "Duffel API", "Flight offers + fulfillment")
+  System_Ext(razorpay, "Razorpay", "Checkout + webhooks")
+  System_Ext(llm, "LLM Provider", "Spring AI ranking")
+  System_Ext(smtp, "SMTP / Mailpit", "Email delivery")
+  Rel(traveler, flystack, "Uses")
+  Rel(flystack, duffel, "Searches & books")
+  BiRel(flystack, razorpay, "Pays / webhooks")
+  Rel(flystack, llm, "Prompts")
+  Rel(flystack, smtp, "Sends email")
+  UpdateLayoutConfig($c4ShapeInRow="4", $c4BoundaryInRow="1")
+      </pre></div>
+
+      <h3>Level 2 &mdash; Containers</h3>
+      <p>Everything runs on one EC2 free-tier box under Docker Compose; the <code>app</code> container is a single Spring Boot JVM.</p>
+      <div class="diagram"><pre class="mermaid">
+C4Container
+  title Containers — FlyStack (one EC2 box)
+  Person(traveler, "Traveler")
+  System_Ext(ext, "Duffel · Razorpay · LLM · SMTP", "External services")
+
+  Container_Boundary(host, "EC2 host — Docker Compose") {
+    Container(caddy, "Caddy", "Reverse proxy / TLS")
+    Container(spa, "SPA", "React + Vite (static)")
+    Container(app, "app", "Spring Boot 4 / Kotlin — one JVM", "7 domain modules")
+    ContainerDb(pg, "PostgreSQL 16", "domain + outbox tables, pg_trgm")
+    ContainerDb(redis, "Redis 7", "airport-search cache")
+    ContainerQueue(kafka, "Kafka (KRaft)", "5 topics")
+  }
+
+  Rel(traveler, caddy, "HTTPS")
+  Rel(caddy, spa, "serves")
+  Rel(caddy, app, "proxies API")
+  Rel(spa, app, "REST / JSON")
+  Rel(app, pg, "JDBC")
+  Rel(app, redis, "RESP")
+  Rel(app, kafka, "pub / sub")
+  BiRel(app, ext, "HTTPS / SMTP")
+  UpdateLayoutConfig($c4ShapeInRow="3", $c4BoundaryInRow="1")
+      </pre></div>
+
+      <h3>Level 3 &mdash; Components (inside <code>app</code>)</h3>
+      <p>The seven Maven modules and how requests flow through them. Cross-module work is Kafka events, never direct calls
+      &mdash; see <a href="#event-architecture">Event Architecture</a> for the topic topology. Every module owns its own tables
+      in the shared Postgres.</p>
+      <div class="diagram"><pre class="mermaid">
+C4Component
+  title Components — inside app
+  Container_Ext(spa, "SPA", "React")
+  System_Ext(duffel, "Duffel")
+  System_Ext(razorpay, "Razorpay")
+  System_Ext(llm, "LLM")
+  ContainerQueue_Ext(kafka, "Kafka")
+
+  Container_Boundary(app, "app — one JVM") {
+    Component(search, "search-service", "Kotlin", "search REST")
+    Component(searchai, "search-ai", "Spring AI", "agent + tool calling")
+    Component(flight, "flight (duffle-api)", "Kotlin", "Duffel client, airport sync")
+    Component(booking, "booking-service", "Kotlin", "booking state machine")
+    Component(order, "order-service", "Kotlin", "orchestration + reconciliation")
+    Component(payment, "payment-service", "Kotlin", "Razorpay + signature verify")
+    Component(notification, "notification", "Kotlin", "email pipeline")
+  }
+
+  Rel(spa, search, "search")
+  Rel(spa, booking, "POST /bookings")
+  Rel(spa, payment, "POST /payments")
+  Rel(searchai, search, "same search")
+  Rel(searchai, llm, "prompts")
+  Rel(search, flight, "offers")
+  Rel(order, flight, "create order")
+  Rel(flight, duffel, "HTTPS")
+  Rel(payment, razorpay, "HTTPS")
+  Rel(booking, kafka, "booking.events / order.events")
+  Rel(order, kafka, "saga topics")
+  Rel(payment, kafka, "payment.events")
+  Rel(notification, kafka, "booking-events / email-events")
+  UpdateLayoutConfig($c4ShapeInRow="3", $c4BoundaryInRow="1")
+      </pre></div>
+    `,
+  },
+  {
+    id: "service-boundaries",
+    title: "Service Boundaries",
+    lede: "What each module owns, and what it is deliberately not allowed to touch.",
+    html: `
+      <div class="table-wrap"><table>
+        <thead><tr><th>Module</th><th>Owns</th><th>Talks to</th></tr></thead>
+        <tbody>
+          <tr><td><code>flight</code> (duffle-api)</td><td>Duffel flight search &amp; order creation; airport sync into Postgres</td><td>Duffel API, its own tables</td></tr>
+          <tr><td><code>search-service</code> / <code>search-ai</code></td><td>Airport / flight search and AI ranking</td><td>Postgres (pg_trgm), Elasticsearch*, Spring AI</td></tr>
+          <tr><td><code>booking-service</code></td><td>The booking entity and its state machine; kicks off the saga</td><td>Publishes <code>booking.events</code>, consumes <code>order.events</code></td></tr>
+          <tr><td><code>order-service</code></td><td>Order orchestration, payment confirmation, reconciliation</td><td>Consumes <code>booking.events</code> + <code>payment.events</code>, publishes <code>order.events</code></td></tr>
+          <tr><td><code>payment-service</code></td><td>Razorpay checkout, signature verification, webhooks</td><td>Razorpay, publishes <code>payment.events</code></td></tr>
+          <tr><td><code>notification</code></td><td>Transactional email</td><td>Consumes <code>booking-events</code>, re-publishes to <code>email-events</code>, SMTP</td></tr>
+          <tr><td><code>common</code></td><td>Shared entities, exceptions, DTOs</td><td>&mdash; (leaf module, no dependencies)</td></tr>
+        </tbody>
+      </table></div>
+      <p style="font-size:12px;color:var(--muted)">* Elasticsearch is used in the full local stack; the AWS profile drops it and
+      serves typo-tolerant airport search from Postgres <code>pg_trgm</code> instead &mdash; see
+      <a href="#data-architecture">Data Architecture</a>.</p>
+
+      <div class="callout">A module never calls another module's service or repository. The only sanctioned cross-module
+      channels are Kafka events and shared <code>common</code> types &mdash; ArchUnit's <code>ModuleBoundaryArchTest</code>
+      is what keeps it that way.</div>
+    `,
+  },
+  {
+    id: "communication",
+    title: "Communication",
+    lede: "Three channels: HTTP inbound, Kafka between modules, HTTPS out to providers.",
+    html: `
+      <div class="grid">
+        <div class="tile"><div class="ic">🌐</div><h4>Inbound — REST</h4><p>The React SPA calls the app's JSON APIs: search, create booking, Razorpay checkout, order status.</p></div>
+        <div class="tile"><div class="ic">📨</div><h4>Internal — Kafka</h4><p><code>booking.events</code>, <code>order.events</code>, <code>payment.events</code>, <code>email-events</code>. Every producer writes through a transactional outbox.</p></div>
+        <div class="tile"><div class="ic">🔌</div><h4>Outbound — HTTPS</h4><p>Duffel (flight inventory &amp; fulfillment), Razorpay (checkout + webhooks), an LLM provider via Spring AI, SMTP.</p></div>
+      </div>
+
+      <h3>Why events, not calls</h3>
+      <p>An in-process method call between <code>booking-service</code> and <code>order-service</code> would be simpler to write
+      and impossible to split later without a rewrite. Routing every cross-domain interaction through Kafka means the modules
+      only share a message contract, the saga survives a consumer being down, and pulling <code>payment-service</code> out into
+      its own deployment is a config change, not a refactor.</p>
+
+      <pre class="code">producer:  acks=all, enable.idempotence=true        (no lost or duplicated-on-retry writes)
+consumer:  manual ack, per-module group + config     (offset commits only after the handler succeeds)
+topics:    single broker, KRaft mode, heap capped 256m</pre>
+    `,
+  },
+  {
+    id: "booking-saga",
+    title: "Booking Saga",
+    lede: "How one booking actually moves from search to a confirmation email — and the events fired along the way.",
+    html: `
+      <p>There is no distributed transaction. The journey is a <strong>choreographed saga</strong>: each service reacts to an
+      event, does its own local transaction, and emits the next event. Legend: <span class="pill pub">publishes</span>
+      <span class="pill con">consumes</span>.</p>
+
+      <div class="flow">
+        <div class="flow-step"><div class="flow-rail"><div class="flow-dot">1</div><div class="flow-line"></div></div>
+          <div class="flow-body"><div class="t">🔍 Search flights</div><div class="a">client · search-service · flight</div>
+          <p>Traveler searches DEL&nbsp;&rarr;&nbsp;BOM. search-service ranks results; <code>flight</code> pulls live Duffel offers.</p></div></div>
+
+        <div class="flow-step"><div class="flow-rail"><div class="flow-dot">2</div><div class="flow-line"></div></div>
+          <div class="flow-body"><div class="t">🎫 Create booking</div><div class="a">booking-service</div>
+          <p>Traveler picks an offer. The <code>Booking</code> row (PENDING) and an outbox row are written in <em>one</em> DB transaction.</p>
+          <span class="pill pub">booking.events · BookingCreated</span></div></div>
+
+        <div class="flow-step"><div class="flow-rail"><div class="flow-dot">3</div><div class="flow-line"></div></div>
+          <div class="flow-body"><div class="t">📦 Submit order</div><div class="a">order-service</div>
+          <p><code>BookingSagaConsumer</code> (group <code>order-service</code>) picks up the event and creates an Order.</p>
+          <span class="pill con">booking.events</span><span class="pill pub">order.events · OrderAwaitingConfirmation</span></div></div>
+
+        <div class="flow-step"><div class="flow-rail"><div class="flow-dot">4</div><div class="flow-line"></div></div>
+          <div class="flow-body"><div class="t">🔄 Sync booking status</div><div class="a">booking-service</div>
+          <p><code>OrderEventConsumer</code> (group <code>booking-service</code>) advances the booking's state machine. Malformed messages are logged and skipped, not retried forever.</p>
+          <span class="pill con">order.events</span></div></div>
+
+        <div class="flow-step"><div class="flow-rail"><div class="flow-dot">5</div><div class="flow-line"></div></div>
+          <div class="flow-body"><div class="t">💳 Checkout &amp; capture</div><div class="a">payment-service</div>
+          <p>Traveler completes Razorpay checkout. payment-service verifies the checkout signature and captures the payment.</p>
+          <span class="pill pub">payment.events · payment.captured</span></div></div>
+
+        <div class="flow-step"><div class="flow-rail"><div class="flow-dot">6</div><div class="flow-line"></div></div>
+          <div class="flow-body"><div class="t">✅ Confirm payment</div><div class="a">order-service</div>
+          <p><code>PaymentEventConsumer</code> (group <code>order-service</code>) marks the order PAID — <code>@Retryable</code> on optimistic-lock conflicts, a no-op if already paid.</p>
+          <span class="pill con">payment.events</span></div></div>
+
+        <div class="flow-step"><div class="flow-rail"><div class="flow-dot">7</div><div class="flow-line"></div></div>
+          <div class="flow-body"><div class="t">📧 Notify traveler</div><div class="a">notification</div>
+          <p>The email worker sends the booking confirmation.</p>
+          <span class="pill pub">email-events</span></div></div>
+      </div>
+
+      <div class="callout">Safety nets run independent of Kafka delivery: a scheduled <code>BookingExpirySweep</code>
+      (booking-service) times out abandoned bookings, and a <code>ReconciliationJob</code> (order-service) resolves orders stuck
+      between states.</div>
+    `,
+  },
+  {
+    id: "state-machine",
+    title: "State Machine",
+    lede: "Three domain entities are explicit state machines — every legal edge is in an ALLOWED map, and anything else throws.",
+    html: `
+      <p>Booking, Order and Payment each expose a <code>transition(event)</code> backed by an <code>ALLOWED</code> map of
+      <code>(state, event) &rarr; state</code>. An edge that isn't in the map throws <code>IllegalStateTransitionException</code>
+      (or <code>IllegalStateException</code> for Payment). Consumers catch it: a redelivered or out-of-order event whose edge no
+      longer fits the current state is logged and acked, because the entity is already where it should be &mdash; which is what
+      makes every consumer safe to replay.</p>
+
+      <h3>Booking &mdash; <code>BookingStatus</code> · booking-service</h3>
+      <p>States: <code>INITIATED</code> <code>IN_PROGRESS</code> <code>RESERVED</code> <code>CONFIRMED</code>
+      <code>CANCELLATION_PENDING</code> <code>CANCELLED</code> <code>FAILED</code> <code>EXPIRED</code></p>
+      <div class="diagram"><pre class="mermaid">
+stateDiagram-v2
+  [*] --> INITIATED
+  INITIATED --> IN_PROGRESS: PUBLISHED
+  INITIATED --> CANCELLED: CANCEL_REQUESTED
+  INITIATED --> EXPIRED: EXPIRED
+  IN_PROGRESS --> RESERVED: PROVIDER_RESERVED
+  IN_PROGRESS --> CONFIRMED: PROVIDER_CONFIRMED (fast path)
+  IN_PROGRESS --> FAILED: PROVIDER_FAILED
+  IN_PROGRESS --> CANCELLATION_PENDING: CANCEL_REQUESTED
+  IN_PROGRESS --> EXPIRED: EXPIRED
+  RESERVED --> CONFIRMED: PROVIDER_CONFIRMED
+  RESERVED --> FAILED: PROVIDER_FAILED
+  RESERVED --> CANCELLATION_PENDING: CANCEL_REQUESTED
+  RESERVED --> EXPIRED: EXPIRED
+  CONFIRMED --> CANCELLATION_PENDING: CANCEL_REQUESTED
+  CANCELLATION_PENDING --> CANCELLED: CANCEL_CONFIRMED
+  CANCELLED --> [*]
+  FAILED --> [*]
+  EXPIRED --> [*]
+      </pre></div>
+      <p class="dcaption">EXPIRED is driven by the scheduled <code>BookingExpirySweep</code>; every other edge comes from a
+      mapped <code>order.events</code> message.</p>
+      <div class="table-wrap"><table>
+        <thead><tr><th>From</th><th>Event</th><th>To</th></tr></thead>
+        <tbody>
+          <tr><td>INITIATED</td><td>PUBLISHED</td><td>IN_PROGRESS</td></tr>
+          <tr><td>INITIATED</td><td>CANCEL_REQUESTED</td><td>CANCELLED</td></tr>
+          <tr><td>INITIATED</td><td>EXPIRED</td><td>EXPIRED</td></tr>
+          <tr><td>IN_PROGRESS</td><td>PROVIDER_RESERVED</td><td>RESERVED</td></tr>
+          <tr><td>IN_PROGRESS</td><td>PROVIDER_CONFIRMED</td><td>CONFIRMED</td></tr>
+          <tr><td>IN_PROGRESS</td><td>PROVIDER_FAILED</td><td>FAILED</td></tr>
+          <tr><td>IN_PROGRESS</td><td>CANCEL_REQUESTED</td><td>CANCELLATION_PENDING</td></tr>
+          <tr><td>IN_PROGRESS</td><td>EXPIRED</td><td>EXPIRED</td></tr>
+          <tr><td>RESERVED</td><td>PROVIDER_CONFIRMED</td><td>CONFIRMED</td></tr>
+          <tr><td>RESERVED</td><td>PROVIDER_FAILED</td><td>FAILED</td></tr>
+          <tr><td>RESERVED</td><td>CANCEL_REQUESTED</td><td>CANCELLATION_PENDING</td></tr>
+          <tr><td>RESERVED</td><td>EXPIRED</td><td>EXPIRED</td></tr>
+          <tr><td>CONFIRMED</td><td>CANCEL_REQUESTED</td><td>CANCELLATION_PENDING</td></tr>
+          <tr><td>CANCELLATION_PENDING</td><td>CANCEL_CONFIRMED</td><td>CANCELLED</td></tr>
+        </tbody>
+      </table></div>
+      <p style="font-size:12px;color:var(--muted)">booking-service's <code>OrderEventConsumer</code> maps <code>order.events</code>
+      onto these: <code>OrderAwaitingConfirmation &rarr; PROVIDER_RESERVED</code>,
+      <code>OrderConfirmed &rarr; PROVIDER_CONFIRMED</code>,
+      <code>OrderFailed</code> / <code>OrderPaymentFailed &rarr; PROVIDER_FAILED</code>,
+      <code>OrderCancelled &rarr; CANCEL_CONFIRMED</code>. Post-confirmation order events (<code>OrderTicketed</code>, …) are
+      ignored &mdash; CONFIRMED is this service's terminal success state.</p>
+
+      <h3>Order &mdash; <code>OrderStatus</code> · order-service</h3>
+      <p>States: <code>DRAFT</code> <code>PENDING_SUBMISSION</code> <code>AWAITING_AIRLINE_CONFIRMATION</code>
+      <code>CONFIRMED</code> <code>TICKETED</code> <code>PAYMENT_FAILED</code> <code>FAILED</code> <code>CANCELLED</code>
+      &nbsp;(rows are inserted at <code>PENDING_SUBMISSION</code>; <code>DRAFT</code> is a legal but unused entry state)</p>
+      <div class="diagram"><pre class="mermaid">
+stateDiagram-v2
+  [*] --> PENDING_SUBMISSION
+  DRAFT --> PENDING_SUBMISSION: SUBMIT (unused)
+  PENDING_SUBMISSION --> CONFIRMED: DUFFEL_2XX_FULL
+  PENDING_SUBMISSION --> AWAITING_AIRLINE_CONFIRMATION: DUFFEL_PENDING
+  PENDING_SUBMISSION --> PAYMENT_FAILED: DUFFEL_PAYMENT_DECLINED
+  PENDING_SUBMISSION --> FAILED: DUFFEL_VALIDATION_FAILED
+  AWAITING_AIRLINE_CONFIRMATION --> CONFIRMED: WEBHOOK_CONFIRMED
+  AWAITING_AIRLINE_CONFIRMATION --> FAILED: RECONCILIATION_NOT_FOUND
+  CONFIRMED --> TICKETED: TICKETED
+  CONFIRMED --> CANCELLED: CANCEL
+  TICKETED --> CANCELLED: CANCEL
+  TICKETED --> [*]
+  PAYMENT_FAILED --> [*]
+  FAILED --> [*]
+  CANCELLED --> [*]
+      </pre></div>
+      <p class="dcaption">Separate from <code>status</code>, <code>customerPaymentStatus</code> moves
+      <code>AWAITING_PAYMENT → PAID</code> on <code>payment.captured</code> (see the callout below).</p>
+      <div class="table-wrap"><table>
+        <thead><tr><th>From</th><th>Event</th><th>To</th></tr></thead>
+        <tbody>
+          <tr><td>DRAFT</td><td>SUBMIT</td><td>PENDING_SUBMISSION <span style="color:var(--muted)">— legal, never raised</span></td></tr>
+          <tr><td>PENDING_SUBMISSION</td><td>DUFFEL_2XX_FULL</td><td>CONFIRMED</td></tr>
+          <tr><td>PENDING_SUBMISSION</td><td>DUFFEL_PENDING</td><td>AWAITING_AIRLINE_CONFIRMATION <span style="color:var(--muted)">— Duffel 202, or ambiguous 500</span></td></tr>
+          <tr><td>PENDING_SUBMISSION</td><td>DUFFEL_PAYMENT_DECLINED</td><td>PAYMENT_FAILED</td></tr>
+          <tr><td>PENDING_SUBMISSION</td><td>DUFFEL_VALIDATION_FAILED</td><td>FAILED</td></tr>
+          <tr><td>AWAITING_AIRLINE_CONFIRMATION</td><td>WEBHOOK_CONFIRMED</td><td>CONFIRMED</td></tr>
+          <tr><td>AWAITING_AIRLINE_CONFIRMATION</td><td>RECONCILIATION_NOT_FOUND</td><td>FAILED</td></tr>
+          <tr><td>CONFIRMED</td><td>TICKETED</td><td>TICKETED</td></tr>
+          <tr><td>CONFIRMED</td><td>CANCEL</td><td>CANCELLED</td></tr>
+          <tr><td>TICKETED</td><td>CANCEL</td><td>CANCELLED</td></tr>
+        </tbody>
+      </table></div>
+      <div class="callout">Customer payment is a <em>separate</em> field &mdash; <code>customerPaymentStatus</code>:
+      <code>AWAITING_PAYMENT &rarr; PAID</code>, flipped when <code>payment.captured</code> is consumed, an idempotent no-op if
+      already PAID. Deliberately not an edge in <code>OrderStatus</code>: airline fulfillment and customer payment move
+      independently.</div>
+
+      <h3>Payment &mdash; <code>PaymentStatus</code> · payment-service</h3>
+      <p>States: <code>CREATED</code> <code>ATTEMPTED</code> <code>CAPTURED</code> <code>FAILED</code> <code>REFUNDED</code></p>
+      <div class="diagram"><pre class="mermaid">
+stateDiagram-v2
+  [*] --> CREATED
+  CREATED --> ATTEMPTED: Attempted
+  CREATED --> CAPTURED: Captured
+  CREATED --> FAILED: Failed
+  ATTEMPTED --> CAPTURED: Captured
+  ATTEMPTED --> FAILED: Failed
+  FAILED --> CAPTURED: Captured (late auth)
+  CAPTURED --> REFUNDED: Refunded
+  CAPTURED --> [*]
+  REFUNDED --> [*]
+      </pre></div>
+      <p class="dcaption"><code>FAILED → CAPTURED</code> is Razorpay's documented late-authorisation edge (a
+      <code>payment.failed</code> followed by <code>payment.captured</code> for the same payment id).</p>
+      <div class="table-wrap"><table>
+        <thead><tr><th>From</th><th>Event</th><th>To</th></tr></thead>
+        <tbody>
+          <tr><td>CREATED</td><td>Attempted</td><td>ATTEMPTED</td></tr>
+          <tr><td>CREATED &middot; ATTEMPTED &middot; FAILED</td><td>Captured</td><td>CAPTURED</td></tr>
+          <tr><td>CREATED &middot; ATTEMPTED</td><td>Failed</td><td>FAILED</td></tr>
+          <tr><td>CAPTURED</td><td>Refunded</td><td>REFUNDED</td></tr>
+        </tbody>
+      </table></div>
+      <p>Re-applying the event an entity already reflects (<code>ATTEMPTED&rarr;Attempted</code>,
+      <code>CAPTURED&rarr;Captured</code>, …) is a no-op returning <code>false</code>. Any edge outside the table throws
+      <code>IllegalStateException</code> rather than walking captured money back to a non-terminal state.</p>
+    `,
+  },
+  {
+    id: "event-architecture",
+    title: "Event Architecture",
+    lede: "Five topics — three for the saga, two for the notification pipeline — each with a transactional outbox in front and a manual-ack consumer behind.",
+    html: `
+      <div class="diagram wide"><pre class="mermaid">
+flowchart LR
+  classDef svc fill:#e3f0ff,stroke:#1e88e5,color:#0e2c56,font-weight:600;
+  classDef ext fill:#fbf1e4,stroke:#a35a12,color:#0e2c56;
+
+  booking["booking-service"]:::svc
+  order["order-service"]:::svc
+  payment["payment-service"]:::svc
+  notif["notification"]:::svc
+  worker["notification · EmailWorker<br/>@RetryableTopic ×3"]:::svc
+  smtp(["SMTP / Mailpit"]):::ext
+  duffel(["Duffel — order created"]):::ext
+  razor(["Razorpay — payment captured"]):::ext
+
+  booking -- "booking.events" --> order
+  order -- "order.events" --> booking
+  razor -.-> payment
+  payment -- "payment.events" --> order
+  duffel -.-> order
+  order -- "booking-events" --> notif
+  notif -- "email-events" --> worker
+  worker -- "send (retry x3, then DLQ)" --> smtp
+      </pre></div>
+      <p class="dcaption">Solid arrows are Kafka topics; dotted arrows are the external callbacks that trigger a producer.
+      order-service both consumes <code>booking.events</code> + <code>payment.events</code> and produces <code>order.events</code>;
+      the notification trigger (<code>booking-events</code>) is enqueued by the <code>flight</code> module inside order-service's
+      saga transaction when Duffel confirms the order.</p>
+
+      <div class="table-wrap"><table>
+        <thead><tr><th>Topic</th><th>Produced by</th><th>Consumed by (group)</th><th>Payload types</th></tr></thead>
+        <tbody>
+          <tr><td><code>booking.events</code></td><td>booking-service &middot; <code>BookingOutboxPublisher</code></td><td>order-service &middot; <code>BookingSagaConsumer</code> (<code>order-service</code>)</td><td>BookingCreated, BookingCancelled</td></tr>
+          <tr><td><code>order.events</code></td><td>order-service &middot; <code>OutboxRelay</code></td><td>booking-service &middot; <code>OrderEventConsumer</code> (<code>booking-service</code>)</td><td>OrderAwaitingConfirmation, OrderConfirmed, OrderFailed, OrderPaymentFailed, OrderCancelled</td></tr>
+          <tr><td><code>payment.events</code></td><td>payment-service &middot; <code>PaymentOutboxPublisher</code></td><td>order-service &middot; <code>PaymentEventConsumer</code> (<code>order-service</code>)</td><td>payment.captured, payment.refunded</td></tr>
+          <tr><td><code>booking-events</code></td><td>notification &middot; <code>OutboxPublisher</code> (rows the <code>flight</code> module enqueues on Duffel order success)</td><td>notification &middot; <code>BookingEventConsumer</code> (<code>notification-service</code>)</td><td>BOOKING_CONFIRMED</td></tr>
+          <tr><td><code>email-events</code></td><td>notification &middot; <code>NotificationService</code></td><td>notification &middot; <code>EmailWorker</code> (<code>email-worker</code>)</td><td>email send requests</td></tr>
+        </tbody>
+      </table></div>
+
+      <h3>Outbox pollers</h3>
+      <div class="table-wrap"><table>
+        <thead><tr><th>Relay</th><th>Interval</th><th>Locking</th><th>Message key &rarr; topic</th></tr></thead>
+        <tbody>
+          <tr><td><code>BookingOutboxPublisher</code> (booking-service)</td><td>1s</td><td><code>SKIP LOCKED</code></td><td>bookingId &rarr; <code>booking.events</code></td></tr>
+          <tr><td><code>OutboxRelay</code> (order-service)</td><td>500ms</td><td><code>FOR UPDATE SKIP LOCKED</code> batch</td><td>orderId &rarr; <code>order.events</code></td></tr>
+          <tr><td><code>PaymentOutboxPublisher</code> (payment-service)</td><td>1s</td><td>&mdash;</td><td>orderId &rarr; <code>payment.events</code></td></tr>
+          <tr><td><code>OutboxPublisher</code> (notification)</td><td>1s</td><td>&mdash;</td><td>orderId &rarr; <code>booking-events</code></td></tr>
+        </tbody>
+      </table></div>
+
+      <p>Keying by entity id pins all events for one booking (or order) to the same partition, so a single consumer sees them in
+      order. <code>FOR UPDATE SKIP LOCKED</code> lets the order-service relay run as multiple instances later without
+      double-publishing.</p>
+
+      <h3>Email pipeline</h3>
+      <p>The <code>EmailWorker</code> uses Spring Kafka's <code>@RetryableTopic</code>: 3 attempts with 5&nbsp;min &rarr;
+      30&nbsp;min backoff (<code>email-events-retry-0</code>, <code>-retry-1</code>), then <code>email-events-dlt</code> for
+      operators to replay once the root cause (e.g. an SMTP outage) is fixed. A malformed message never blocks the partition.</p>
+    `,
+  },
+  {
+    id: "reliability",
+    title: "Reliability & Consistency",
+    lede: "The system is eventually consistent by design; these are the mechanisms that make \"eventually\" actually arrive.",
+    html: `
+      <h3>The dual-write problem, solved with an outbox</h3>
+      <p>Writing to the database and publishing to Kafka in the same operation can't be atomic &mdash; one can succeed while the
+      other fails. Instead, the domain change and an <code>outbox</code> row are committed in a single DB transaction; a
+      scheduled poller reads unsent rows and publishes them. The database is the single source of truth for "did this event
+      happen".</p>
+
+      <div class="grid">
+        <div class="tile"><h4>At-least-once</h4><p>Producers retry; the outbox guarantees delivery. Duplicates are expected.</p></div>
+        <div class="tile"><h4>Idempotent consumers</h4><p>Every handler is a no-op if the effect is already applied, so re-delivery is harmless.</p></div>
+        <div class="tile"><h4>Out-of-order safe</h4><p>Transition validation rejects events that don't fit the current state.</p></div>
+        <div class="tile"><h4>Optimistic locking</h4><p><code>@Retryable</code> on version conflicts; concurrent updates to the same order retry rather than clobber.</p></div>
+        <div class="tile"><h4>Poison-message skip</h4><p>Parse failures are logged and the offset committed &mdash; one bad message can't wedge a partition.</p></div>
+        <div class="tile"><h4>Safety-net jobs</h4><p>Expiry sweep + reconciliation catch sagas that stalled for reasons Kafka can't see.</p></div>
+      </div>
+
+      <div class="callout warn">There is no automated rollback. A saga that can't complete is surfaced by the reconciliation
+      job and resolved manually or by a fix-forward deploy &mdash; an acceptable trade for a portfolio system, not for one with
+      real money moving through it at volume.</div>
+    `,
+  },
+  {
+    id: "data-architecture",
+    title: "Data Architecture",
+    lede: "One PostgreSQL instance, per-domain tables, schema owned entirely by Flyway.",
+    html: `
+      <div class="grid">
+        <div class="tile"><div class="ic">🐘</div><h4>PostgreSQL 16</h4><p>System of record. Logical separation by table ownership, not separate databases.</p></div>
+        <div class="tile"><div class="ic">🧬</div><h4>Flyway</h4><p>13 versioned migrations, run on startup. No hand-edited schema.</p></div>
+        <div class="tile"><div class="ic">🔤</div><h4>pg_trgm</h4><p>GIN trigram indexes on airport <code>name</code> / <code>city_name</code> for typo-tolerant search.</p></div>
+        <div class="tile"><div class="ic">🟥</div><h4>Redis 7</h4><p>Caches ranked airport-search results (24h TTL, type-aware serializer).</p></div>
+      </div>
+
+      <h3>What the 13 migrations build</h3>
+      <ul>
+        <li><strong>V1–V2</strong> — airports table (+ pg_trgm indexes), airport-sync state</li>
+        <li><strong>V3, V5</strong> — notification tables, email <code>sent_at</code></li>
+        <li><strong>V4, V6, V7</strong> — booking outbox, bookings, booking-event outbox</li>
+        <li><strong>V8–V9, V13</strong> — payments, payment outbox, widened idempotency key</li>
+        <li><strong>V10–V12</strong> — orders, order outbox, customer payment status</li>
+      </ul>
+
+      <div class="callout">The local stack also runs Elasticsearch for airport search. The AWS deployment drops it entirely:
+      <code>pg_trgm</code>'s <code>similarity()</code> ranking covers typo tolerance, which removes ~900&nbsp;MB of RAM from a
+      1&nbsp;GiB box. The Elasticsearch repository is gated behind a Spring profile so it simply isn't wired in that
+      environment.</div>
+    `,
+  },
+  {
+    id: "ai-architecture",
+    title: "AI Architecture",
+    lede: "A multi-step agent that turns a vague request into a validated flight search — via tool calls and structured output.",
+    html: `
+      <p>The AI assistant is built on <strong>Spring AI</strong>. It isn't a chatbot bolted on the side &mdash; it drives the
+      same search the form does:</p>
+      <div class="flow">
+        <div class="flow-step"><div class="flow-rail"><div class="flow-dot">1</div><div class="flow-line"></div></div>
+          <div class="flow-body"><div class="t">Collect</div><p>Multi-turn conversation fills in missing trip details (dates, cabin, passengers).</p></div></div>
+        <div class="flow-step"><div class="flow-rail"><div class="flow-dot">2</div><div class="flow-line"></div></div>
+          <div class="flow-body"><div class="t">Validate</div><p>Request is checked against the same validation rules the REST API enforces.</p></div></div>
+        <div class="flow-step"><div class="flow-rail"><div class="flow-dot">3</div><div class="flow-line"></div></div>
+          <div class="flow-body"><div class="t">Search</div><p>The model calls the <code>searchFlights</code> tool; results come back as a typed object via a JSON-schema <code>BeanOutputConverter</code>.</p></div></div>
+        <div class="flow-step"><div class="flow-rail"><div class="flow-dot">4</div><div class="flow-line"></div></div>
+          <div class="flow-body"><div class="t">Rank &amp; explain</div><p>Offers are ordered by price / duration / stops and handed back to the same results UI.</p></div></div>
+      </div>
+
+      <p>
+        <span class="pill">Tool calling</span><span class="pill">Structured JSON output</span>
+        <span class="pill">Multi-turn context</span><span class="pill">RelevancyEvaluator (test-time)</span>
+        <span class="pill">pgvector embeddings *</span>
+      </p>
+      <p style="font-size:12px;color:var(--muted)">* Vector search / RAG grounding is wired in the full stack; the trimmed AWS
+      deployment runs the agent without it.</p>
+    `,
+  },
+  {
+    id: "security",
+    title: "Security",
+    lede: "Payment integrity, secret hygiene, and a locked-down host.",
+    html: `
+      <div class="grid">
+        <div class="tile"><div class="ic">✍️</div><h4>Signature verification</h4><p>Razorpay checkout signatures and webhook payloads are HMAC-verified before any state changes.</p></div>
+        <div class="tile"><div class="ic">🔑</div><h4>Secrets</h4><p>All API keys / webhook secrets come from environment variables; <code>.env</code> files are gitignored and shipped over SSH, never committed.</p></div>
+        <div class="tile"><div class="ic">🔒</div><h4>TLS</h4><p>Caddy terminates HTTPS with an auto-renewing Let's Encrypt certificate; the app only listens on <code>127.0.0.1</code>.</p></div>
+        <div class="tile"><div class="ic">🛡️</div><h4>Host</h4><p>SSH restricted to a single IP (or closed entirely in favour of SSM); IMDSv2 required; a zero-spend budget alarm guards the AWS account.</p></div>
+      </div>
+
+      <h3>Deploy path</h3>
+      <p>CI authenticates to AWS with <strong>GitHub OIDC</strong> (short-lived role assumption, no stored key) and runs the
+      deploy through <strong>SSM Send-Command</strong> &mdash; so the pipeline needs no inbound SSH and no long-lived
+      credential anywhere.</p>
+    `,
+  },
+  {
+    id: "observability",
+    title: "Observability",
+    lede: "Enough signal to know the box is healthy and to debug a failed deploy — without a monitoring stack it can't afford to run.",
+    html: `
+      <div class="grid">
+        <div class="tile"><div class="ic">❤️</div><h4>Actuator health</h4><p><code>/actuator/health</code> with liveness / readiness groups; the ES health contributor is disabled in the AWS profile.</p></div>
+        <div class="tile"><div class="ic">🧬</div><h4>Migration logs</h4><p>Flyway logs every applied version on startup — the first thing to check after a deploy.</p></div>
+        <div class="tile"><div class="ic">📦</div><h4>Container logs &amp; stats</h4><p><code>docker logs</code> / <code>docker stats</code> for per-service output and live memory against the 1&nbsp;GiB ceiling.</p></div>
+        <div class="tile"><div class="ic">🚦</div><h4>Deploy gate</h4><p>The pipeline polls the health endpoint and fails the run if the app doesn't come back up.</p></div>
+      </div>
+      <div class="callout">Deliberately minimal. The engineering experience behind this project includes Graylog + Grafana across
+      a fleet of payment services &mdash; here, the right call for 5 requests a day is Actuator plus structured logs, not a
+      monitoring stack that costs more than the app.</div>
+    `,
+  },
+  {
+    id: "failure-recovery",
+    title: "Failure & Recovery",
+    lede: "What happens when a message is bad, a service is down, a deploy breaks, or the box runs out of memory.",
+    html: `
+      <div class="table-wrap"><table>
+        <thead><tr><th>Failure</th><th>Handling</th></tr></thead>
+        <tbody>
+          <tr><td>Malformed / poison Kafka message</td><td>Logged, offset committed, partition keeps moving</td></tr>
+          <tr><td>Email send fails</td><td><code>@RetryableTopic</code>: 3 attempts, 5→30&nbsp;min backoff, then DLQ handler</td></tr>
+          <tr><td>Concurrent update to the same order</td><td>Optimistic-lock version conflict → <code>@Retryable</code></td></tr>
+          <tr><td>Consumer down when an event is published</td><td>Outbox holds it; delivered on restart (at-least-once)</td></tr>
+          <tr><td>Saga stalls between states</td><td><code>BookingExpirySweep</code> + <code>ReconciliationJob</code> resolve it out of band</td></tr>
+          <tr><td>Bad deploy</td><td>Health poll fails the CI run; no auto-rollback — fix forward with the next push</td></tr>
+          <tr><td>JVM pressure on the 1&nbsp;GiB box</td><td>Heap flags capped per service (<code>-Xmx</code>), 2&nbsp;GiB swap file, <code>ExitOnOutOfMemoryError</code> + <code>restart: unless-stopped</code></td></tr>
+        </tbody>
+      </table></div>
+    `,
+  },
+  {
+    id: "architecture-decisions",
+    title: "Architecture Decisions",
+    lede: "The trade-offs, stated plainly — each one is a choice, not a default.",
+    html: `
+      <h3>Modular monolith, not microservices</h3>
+      <p>Real traffic is a few requests a day. Six deployments would be six things to run, secure, and pay for, to serve load a
+      single JVM handles without noticing. ArchUnit enforces the boundaries so the split stays cheap <em>if</em> it's ever
+      warranted.</p>
+
+      <h3>Local PostgreSQL, not RDS</h3>
+      <p>RDS free tier is free for 12 months, then it bills silently. For a demo that might not be revisited for a year, that's
+      a landmine. A Postgres container on the same box costs nothing and never expires.</p>
+
+      <h3>Kafka kept, capped</h3>
+      <p>Overkill for the traffic by any load argument &mdash; but the outbox saga is the point of the project. It stays, with
+      a 256&nbsp;MB heap.</p>
+
+      <h3>Elasticsearch cut for AWS</h3>
+      <p>It was a write-only sink; the read path was already 100% Postgres. <code>pg_trgm</code> covers typo-tolerant search,
+      and dropping ES frees ~900&nbsp;MB on a 1&nbsp;GiB box.</p>
+
+      <h3>Transactional outbox</h3>
+      <p>The only way to avoid dual-write inconsistency between the database and Kafka without a distributed transaction the
+      infrastructure doesn't support.</p>
+
+      <h3>OIDC + SSM for deploys, not an SSH key in CI</h3>
+      <p>A stored private key is a standing liability anyone with push access could use. OIDC hands the job a short-lived role;
+      SSM runs the deploy with no inbound SSH at all.</p>
+
+      <h3>Caddy, not nginx + certbot</h3>
+      <p>Automatic ACME, HTTP/2, and a three-line config. One less moving part to maintain.</p>
+    `,
+  },
+];
+
+const navList = document.getElementById("navList");
+const main = document.getElementById("main");
+
+if (window.mermaid) {
+  mermaid.initialize({
+    startOnLoad: false,
+    theme: "base",
+    themeVariables: {
+      primaryColor: "#e3f0ff",
+      primaryBorderColor: "#1e88e5",
+      primaryTextColor: "#0e2c56",
+      secondaryColor: "#f3f9ff",
+      tertiaryColor: "#ffffff",
+      lineColor: "#6b7c99",
+      fontFamily: '"Inter","Segoe UI",system-ui,-apple-system,sans-serif',
+      fontSize: "13px",
+    },
+    flowchart: { htmlLabels: true, curve: "basis", nodeSpacing: 45, rankSpacing: 55 },
+    securityLevel: "loose",
+  });
+}
+
+// Diagrams render the first time their panel becomes visible -- C4 layout in
+// particular measures the container, so rendering a display:none panel can
+// come out mis-sized.
+async function renderDiagrams(panel) {
+  if (!panel || !window.mermaid) return;
+  const pending = panel.querySelectorAll(".mermaid:not([data-processed])");
+  if (!pending.length) return;
+  try {
+    await mermaid.run({ nodes: pending });
+  } catch (e) {
+    console.error("mermaid render failed", e);
+  }
+}
+
+SECTIONS.forEach((s, i) => {
+  const li = document.createElement("li");
+  const a = document.createElement("a");
+  a.className = "nav-link";
+  a.href = "#" + s.id;
+  a.dataset.id = s.id;
+  a.innerHTML = '<span class="num">' + String(i + 1).padStart(2, "0") + "</span><span>" + s.title + "</span>";
+  li.appendChild(a);
+  navList.appendChild(li);
+
+  const panel = document.createElement("article");
+  panel.className = "panel";
+  panel.id = "panel-" + s.id;
+  panel.innerHTML =
+    '<div class="eyebrow">' + String(i + 1).padStart(2, "0") + " · ARCHITECTURE</div>" +
+    "<h2>" + s.title + "</h2>" +
+    '<p class="lede">' + s.lede + "</p>" +
+    s.html;
+  main.appendChild(panel);
+});
+
+function show(id) {
+  const target = SECTIONS.some((s) => s.id === id) ? id : SECTIONS[0].id;
+  document.querySelectorAll(".panel").forEach((p) => p.classList.toggle("active", p.id === "panel-" + target));
+  document.querySelectorAll(".nav-link").forEach((n) => n.classList.toggle("active", n.dataset.id === target));
+  window.scrollTo(0, 0);
+  renderDiagrams(document.getElementById("panel-" + target));
+}
+
+navList.addEventListener("click", (e) => {
+  const link = e.target.closest(".nav-link");
+  if (!link) return;
+  e.preventDefault();
+  history.replaceState(null, "", "#" + link.dataset.id);
+  show(link.dataset.id);
+});
+
+window.addEventListener("hashchange", () => show(location.hash.slice(1)));
+show(location.hash.slice(1));
+</script>
+</body>
+</html>

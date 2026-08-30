@@ -1,19 +1,15 @@
 import { useState } from 'react'
-import ThemeToggle from '../ThemeToggle.jsx'
 import { DownloadIcon } from './icons.jsx'
 
 const NAV_ITEMS = [
   { label: 'Home', href: '#' },
-  { label: 'About', href: '#about' },
-  { label: 'Skills', href: '#skills' },
+  { label: 'Platform', href: '#platform' },
+  { label: 'Architecture', href: '/architecture.html' },
   { label: 'Projects', href: '#featured-projects' },
-  { label: 'Architecture', href: '#architecture' },
-  { label: 'C4 Diagram', href: '#c4-diagram' },
-  { label: 'Experience', href: '#experience' },
-  { label: 'Contact', href: '#contact' },
+  { label: 'About', href: '#about' },
 ]
 
-export default function PortfolioHeader({ theme, onThemeChange }) {
+export default function PortfolioHeader() {
   const [active, setActive] = useState('Home')
 
   return (
@@ -25,7 +21,7 @@ export default function PortfolioHeader({ theme, onThemeChange }) {
             <div className="text-lg font-extrabold tracking-tight">
               Aatika <span className="font-light text-white/80">FlyStack</span>
             </div>
-            <div className="text-[11px] text-white/70">Java Backend Engineer</div>
+            <div className="text-[11px] text-white/70">Backend Engineer | Distributed Systems | AI</div>
           </div>
         </div>
 
@@ -48,7 +44,6 @@ export default function PortfolioHeader({ theme, onThemeChange }) {
         </nav>
 
         <div className="flex items-center gap-3">
-          <ThemeToggle theme={theme} onChange={onThemeChange} dark />
           <a
             href="/resume.pdf"
             download="Aatika_Fatima_Resume.pdf"
