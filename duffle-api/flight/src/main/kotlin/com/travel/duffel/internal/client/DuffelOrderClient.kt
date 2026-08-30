@@ -147,7 +147,20 @@ class DuffelOrderClient(
                 haystack.contains("payment") || haystack.contains("balance")
             }
 
+        // The airline can invalidate an offer server-side between search and
+        // order creation (Duffel/Travelport `offer_no_longer_available`) --
+        // that's a stale offer, not bad passenger data, and the fix is to
+        // search again, not to correct a field.
+        val isOfferGone =
+            errors.any { it.code in setOf("offer_no_longer_available", "expired_offer", "offer_request_already_exists") }
+
         return when {
+            isOfferGone ->
+                BookingException(
+                    "This offer is no longer available. Please search again.",
+                    reason = BookingFailureReason.OFFER_EXPIRED,
+                    cause = base,
+                )
             isPaymentRelated ->
                 BookingException(
                     "Payment was declined.",

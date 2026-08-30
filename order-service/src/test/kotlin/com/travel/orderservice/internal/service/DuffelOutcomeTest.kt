@@ -51,6 +51,14 @@ class DuffelOutcomeTest {
     }
 
     @Test
+    fun `an offer withdrawn between search and order is terminal, mapped to DUFFEL_VALIDATION_FAILED`() {
+        // Retrying the same offer can only fail again -- terminal FAILED,
+        // not a rethrow that would roll back and be redelivered forever.
+        val ex = BookingException("offer gone", reason = BookingFailureReason.OFFER_EXPIRED)
+        assertEquals(OrderStatusEvent.DUFFEL_VALIDATION_FAILED, DuffelOutcome.from(ex))
+    }
+
+    @Test
     fun `a retryable 503 is rethrown unchanged, not mapped to an event`() {
         val ex = ExternalApiException("unavailable", statusCode = 503, retryable = true)
         val thrown = assertFailsWith<ExternalApiException> { DuffelOutcome.from(ex) }
@@ -65,16 +73,17 @@ class DuffelOutcomeTest {
     }
 
     @Test
+    fun `a BookingException with the UNKNOWN reason is rethrown unchanged, not mapped to an event`() {
+        val ex = BookingException("something odd", reason = BookingFailureReason.UNKNOWN)
+        val thrown = assertFailsWith<BookingException> { DuffelOutcome.from(ex) }
+        assertSame(ex, thrown)
+    }
+
+    @Test
     fun `an ExternalApiException with no status code at all is rethrown unchanged`() {
         val ex = ExternalApiException("unknown failure", statusCode = null)
         val thrown = assertFailsWith<ExternalApiException> { DuffelOutcome.from(ex) }
         assertSame(ex, thrown)
     }
 
-    @Test
-    fun `a BookingException with an unrelated reason is rethrown unchanged, not mapped to an event`() {
-        val ex = BookingException("offer expired", reason = BookingFailureReason.OFFER_EXPIRED)
-        val thrown = assertFailsWith<BookingException> { DuffelOutcome.from(ex) }
-        assertSame(ex, thrown)
-    }
 }

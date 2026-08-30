@@ -20,7 +20,12 @@ object DuffelOutcome {
         ex is ExternalApiException && ex.statusCode == 500 -> OrderStatusEvent.DUFFEL_PENDING
         ex is BookingException && ex.reason == BookingFailureReason.PAYMENT_DECLINED ->
             OrderStatusEvent.DUFFEL_PAYMENT_DECLINED
-        ex is BookingException && ex.reason == BookingFailureReason.VALIDATION_FAILED ->
+        // An expired/withdrawn offer is terminal for this order the same way
+        // a validation failure is -- retrying the same offer can only fail
+        // again. Same FAILED transition; the customer-facing reason on the
+        // order row is what distinguishes them.
+        ex is BookingException &&
+            (ex.reason == BookingFailureReason.VALIDATION_FAILED || ex.reason == BookingFailureReason.OFFER_EXPIRED) ->
             OrderStatusEvent.DUFFEL_VALIDATION_FAILED
         // 503 and other retryable ExternalApiExceptions are not caught here --
         // they propagate up through @Retryable on DuffelOrderClient instead.

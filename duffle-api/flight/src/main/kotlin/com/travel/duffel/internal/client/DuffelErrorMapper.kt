@@ -18,7 +18,7 @@ object DuffelErrorMapper {
         return when {
             status == HttpStatusCode.valueOf(400) || status == HttpStatusCode.valueOf(422) ->
                 ValidationException(
-                    "Duffel rejected the search request: ${errorMessages.joinToString().ifBlank { ex.message.orEmpty() }}",
+                    "Duffel rejected the request: ${errorMessages.joinToString().ifBlank { ex.message.orEmpty() }}",
                     errors = errorMessages,
                 )
             status == HttpStatusCode.valueOf(429) ->
