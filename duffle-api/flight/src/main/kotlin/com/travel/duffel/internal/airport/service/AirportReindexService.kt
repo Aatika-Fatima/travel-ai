@@ -20,7 +20,7 @@ class AirportReindexService(
      * initial backfill and for manual recovery — routine syncs stay incremental via [AirportUpsertService]. */
     fun reindexAll(pageSize: Int = 500): Int {
         val documentRepository = airportDocumentRepository
-            ?: error("Elasticsearch is not enabled (aws profile); airport reindex is unavailable")
+            ?: throw UnsupportedOperationException("Elasticsearch is not enabled (aws profile); airport reindex is unavailable")
         var page = 0
         var total = 0
         while (true) {

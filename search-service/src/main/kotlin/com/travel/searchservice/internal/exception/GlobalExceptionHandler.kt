@@ -8,8 +8,10 @@ import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.http.converter.HttpMessageNotReadableException
 import org.springframework.web.bind.MethodArgumentNotValidException
+import org.springframework.web.bind.ServletRequestBindingException
 import org.springframework.web.bind.annotation.ExceptionHandler
 import org.springframework.web.bind.annotation.RestControllerAdvice
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException
 import org.springframework.web.servlet.resource.NoResourceFoundException
 
 data class ApiErrorResponse(
@@ -68,6 +70,45 @@ class GlobalExceptionHandler {
                     status = HttpStatus.NOT_FOUND.value(),
                     error = "Not Found",
                     message = "No resource found at this path",
+                ),
+            )
+
+    // A missing/unbindable query param, header, or path variable is the caller's
+    // mistake -- 400, not the catch-all 500 below.
+    @ExceptionHandler(ServletRequestBindingException::class, MethodArgumentTypeMismatchException::class)
+    fun handleBadRequestBinding(ex: Exception): ResponseEntity<ApiErrorResponse> =
+        ResponseEntity
+            .status(HttpStatus.BAD_REQUEST)
+            .body(
+                ApiErrorResponse(
+                    status = HttpStatus.BAD_REQUEST.value(),
+                    error = "Bad Request",
+                    message = ex.message ?: "The request is missing a required parameter or has an invalid value",
+                ),
+            )
+
+    // Domain "not found" -- BookingNotFoundException and friends extend NoSuchElementException.
+    @ExceptionHandler(NoSuchElementException::class)
+    fun handleNotFound(ex: NoSuchElementException): ResponseEntity<ApiErrorResponse> =
+        ResponseEntity
+            .status(HttpStatus.NOT_FOUND)
+            .body(
+                ApiErrorResponse(
+                    status = HttpStatus.NOT_FOUND.value(),
+                    error = "Not Found",
+                    message = ex.message ?: "The requested resource does not exist",
+                ),
+            )
+
+    @ExceptionHandler(UnsupportedOperationException::class)
+    fun handleUnsupported(ex: UnsupportedOperationException): ResponseEntity<ApiErrorResponse> =
+        ResponseEntity
+            .status(HttpStatus.NOT_IMPLEMENTED)
+            .body(
+                ApiErrorResponse(
+                    status = HttpStatus.NOT_IMPLEMENTED.value(),
+                    error = "Not Implemented",
+                    message = ex.message ?: "This operation is not available in the current deployment",
                 ),
             )
 
