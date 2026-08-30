@@ -7,6 +7,7 @@ import com.travel.orderservice.api.toBookingRequest
 import com.travel.orderservice.internal.outbox.OutboxWriter
 import com.travel.orderservice.internal.persistence.OrderEntity
 import com.travel.orderservice.internal.persistence.OrderRepository
+import org.slf4j.LoggerFactory
 import org.springframework.dao.DataIntegrityViolationException
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
@@ -21,6 +22,8 @@ class OrderServiceImpl(
     private val metrics: OrderMetrics,
     private val transitions: OrderTransitions,
 ) : OrderService {
+
+    private val log = LoggerFactory.getLogger(javaClass)
 
     @Transactional
     override fun submit(command: SubmitOrderCommand): OrderView {
@@ -50,6 +53,7 @@ class OrderServiceImpl(
                 return orders.findByIdempotencyKey(command.idempotencyKey)?.toView() ?: throw ex
             }
         outbox.append(order.id, OrderEvent.pending(order.id))
+        log.info("Submitting order {} to Duffel (offer {}, key {})", order.id, order.offerId, order.idempotencyKey)
 
         return callDuffelAndAdvance(order, command)
     }
@@ -70,9 +74,18 @@ class OrderServiceImpl(
                 // here is picked up by the same flush advance() triggers.
                 order.duffelOrderId = result.orderId
                 order.bookingReference = result.bookingReference
+                log.info("Order {} confirmed by Duffel (order {}, ref {})", order.id, result.orderId, result.bookingReference)
                 transitions.advance(order.id, DuffelOutcome.confirmed(result))
             },
-            onFailure = { ex -> transitions.advance(order.id, DuffelOutcome.from(ex)) },
+            onFailure = { ex ->
+                // Persisted on the same managed entity (same flush as
+                // advance()); the customer only ever sees a generic
+                // "airline could not confirm" message, so this row + this
+                // log line are the only trail a failed booking leaves.
+                order.failureReason = ex.message?.take(500)
+                log.warn("Order {} rejected by Duffel (offer {}): {}", order.id, order.offerId, ex.message, ex)
+                transitions.advance(order.id, DuffelOutcome.from(ex))
+            },
         )
         // advance() has no notion of "who's asking" -- it's shared with the
         // webhook controller and the reconciliation sweep, neither of which

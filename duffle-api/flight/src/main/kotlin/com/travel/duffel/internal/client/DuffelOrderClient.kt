@@ -12,6 +12,7 @@ import com.travel.duffel.api.dto.response.DuffelOfferResponse
 import com.travel.duffel.api.dto.response.DuffelOrderData
 import com.travel.duffel.api.dto.response.DuffelOrderListResponse
 import com.travel.duffel.api.dto.response.DuffelOrderResponse
+import org.slf4j.LoggerFactory
 import org.springframework.retry.annotation.Backoff
 import org.springframework.retry.annotation.Retryable
 import org.springframework.stereotype.Component
@@ -25,6 +26,7 @@ class DuffelOrderClient(
     private val duffelRestClient: RestClient,
     private val jsonMapper: JsonMapper,
 ) {
+    private val log = LoggerFactory.getLogger(javaClass)
     @Retryable(
         exceptionExpression = "#root instanceof T(com.travel.common.exception.ExternalApiException) && #root.retryable",
         maxAttempts = 3,
@@ -133,6 +135,9 @@ class DuffelOrderClient(
     }
 
     private fun reclassifyOrderError(ex: RestClientResponseException): RuntimeException {
+        // The one place Duffel's actual rejection text is visible -- log it
+        // before it gets wrapped and reclassified into a domain exception.
+        log.warn("Duffel POST /air/orders -> {}: {}", ex.statusCode.value(), ex.responseBodyAsString.take(2000))
         val base = DuffelErrorMapper.toDomainException(ex, jsonMapper)
         val errors = parseErrors(ex.responseBodyAsString)
 

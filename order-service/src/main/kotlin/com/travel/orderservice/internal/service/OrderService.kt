@@ -30,6 +30,7 @@ fun OrderEntity.toView(justCreated: Boolean = false) = OrderView(
     offerId = offerId,
     duffelOrderId = duffelOrderId,
     bookingReference = bookingReference,
+    failureReason = failureReason,
     createdAt = createdAt,
     updatedAt = updatedAt,
     justCreated = justCreated,

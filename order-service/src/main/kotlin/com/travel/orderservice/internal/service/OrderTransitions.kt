@@ -4,6 +4,7 @@ import com.travel.orderservice.api.OrderStatusEvent
 import com.travel.orderservice.api.OrderView
 import com.travel.orderservice.internal.outbox.OutboxWriter
 import com.travel.orderservice.internal.persistence.OrderRepository
+import org.slf4j.LoggerFactory
 import org.springframework.orm.ObjectOptimisticLockingFailureException
 import org.springframework.retry.annotation.Backoff
 import org.springframework.retry.annotation.Retryable
@@ -22,6 +23,8 @@ class OrderTransitions(
     private val outbox: OutboxWriter,
     private val metrics: OrderMetrics,
 ) {
+    private val log = LoggerFactory.getLogger(javaClass)
+
     @Retryable(
         retryFor = [ObjectOptimisticLockingFailureException::class],
         maxAttempts = 4,
@@ -35,6 +38,7 @@ class OrderTransitions(
         order.updatedAt = Clock.System.now()
         outbox.append(orderId, event.toOutboxPayload(order))
         metrics.stateTransition(from, order.status)
+        log.info("Order {} transition {} --[{}]--> {}", orderId, from, event, order.status)
         return order.toView()
     }
 }

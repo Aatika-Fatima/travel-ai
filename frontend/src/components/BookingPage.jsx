@@ -173,8 +173,8 @@ export default function BookingPage({ offer, passengers, onBackToResults }) {
         setStatus('payment')
       } else if (outcome.outcome === 'failed') {
         setBookingError({
-          message: `The airline could not confirm this booking (${outcome.order.status.toLowerCase().replaceAll('_', ' ')}).`,
-          details: [],
+          message: 'The airline could not confirm this booking.',
+          details: outcome.order.failureReason ? [outcome.order.failureReason] : [],
         })
         setStatus('error')
       } else {

@@ -11,6 +11,8 @@ data class OrderView(
     val bookingReference: String?,
     val createdAt: Instant,
     val updatedAt: Instant,
+    // Populated only for FAILED orders -- the reason Duffel rejected it.
+    val failureReason: String? = null,
     // Lets OrderController below answer 201 vs 200 — see its step-note.
     // Defaults to false so the two duplicate-check branches in
     // OrderServiceImpl.submit(), which only ever look up an *existing*

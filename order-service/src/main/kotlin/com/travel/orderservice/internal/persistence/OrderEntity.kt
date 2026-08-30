@@ -66,4 +66,10 @@ class OrderEntity(
     val createdAt: Instant = Clock.System.now(),
     @Column(name = "updated_at", nullable = false)
     var updatedAt: Instant = Clock.System.now(),
+
+    // Why the order moved to FAILED -- the Duffel error message (or the
+    // reclassified reason), truncated. Null unless status == FAILED. Kept
+    // last so positional constructor callers (tests) don't shift.
+    @Column(name = "failure_reason", length = 500)
+    var failureReason: String? = null,
 )
