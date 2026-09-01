@@ -72,6 +72,7 @@ export default function TravelerForm({ index, category, value, onChange, errors 
           <input
             type="date"
             value={value.dateOfBirth}
+            max={new Date().toISOString().slice(0, 10)}
             onChange={(event) => update({ dateOfBirth: event.target.value })}
             className={`mt-1 w-full rounded-lg border bg-white px-3 py-2 text-sm font-medium text-brand-900 focus:outline-none focus:ring-1 ${
               errors.dateOfBirth

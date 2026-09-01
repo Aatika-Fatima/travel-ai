@@ -271,6 +271,326 @@
   .diagram.wide .mermaid svg { max-width: none; }
   .dcaption { font-size: 12px; color: var(--muted); margin: -4px 0 18px; max-width: 68ch; }
 
+  /* ---------- interactive system map ---------- */
+  .sysmap {
+    margin: 16px 0;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    background: var(--surface);
+    box-shadow: var(--shadow);
+    overflow: hidden;
+  }
+  .sysmap-bar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px 16px;
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--border);
+    background: var(--surface-alt);
+  }
+  .sm-toggle {
+    display: inline-flex;
+    align-items: center;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--ink-soft);
+    border-radius: 999px;
+    padding: 6px 14px;
+    font: 700 12.5px/1 inherit;
+    cursor: pointer;
+    transition: background-color 0.14s, color 0.14s, border-color 0.14s;
+  }
+  .sm-toggle:hover { border-color: var(--accent); color: var(--brand); }
+  .sm-toggle.on { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .sm-legend { display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: 11px; color: var(--muted); }
+  .sm-key { display: inline-flex; align-items: center; gap: 6px; }
+  .sm-key::before { content: ""; width: 18px; border-top: 2px solid currentColor; }
+  .sm-key.http { color: var(--accent); }
+  .sm-key.kafka { color: var(--brand); }
+  .sm-key.ext { color: var(--warn); }
+  .sm-key.ext::before { border-top-style: dashed; }
+
+  .sysmap-stage { position: relative; overflow-x: auto; padding: 24px 16px; }
+  .sm-canvas { position: relative; min-width: 780px; }
+  .sm-edges { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; pointer-events: none; z-index: 0; }
+  .sm-lanes {
+    position: relative;
+    z-index: 1;
+    display: grid;
+    grid-template-columns: 116px minmax(320px, 1fr) 150px;
+    gap: 22px;
+    align-items: start;
+  }
+  .sm-kafka-bar {
+    position: relative;
+    z-index: 1;
+    margin: 20px 168px 0 138px;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 4px 12px;
+    border-radius: 10px;
+    padding: 8px 14px;
+    background: var(--brand);
+    color: #fff;
+    box-shadow: var(--shadow);
+  }
+  .sm-kafka-bar .kb-name { font-size: 11px; font-weight: 800; letter-spacing: 0.04em; }
+  .sm-kafka-bar .kb-topics { font-size: 10.5px; font-weight: 500; color: rgba(255, 255, 255, 0.72); font-family: ui-monospace, Consolas, monospace; }
+  .sysmap-stage.saga .sm-kafka-bar { box-shadow: 0 0 0 2px var(--accent), var(--shadow); }
+
+  .sm-step { opacity: 0; transition: opacity 0.14s; }
+  .sm-step circle { fill: var(--surface); stroke: var(--brand); stroke-width: 1.5; }
+  .sm-step text { fill: var(--brand); font-size: 9px; font-weight: 800; }
+  .sm-step.lit { opacity: 1; }
+  .sm-step.lit circle { fill: var(--accent); stroke: var(--accent); }
+  .sm-step.lit text { fill: #fff; }
+  .sysmap-stage.saga .sm-step.saga { opacity: 1; }
+  .sysmap-stage.saga .sm-step.saga circle { fill: var(--accent); stroke: var(--accent); }
+  .sysmap-stage.saga .sm-step.saga text { fill: #fff; }
+  .sm-lane { display: flex; flex-direction: column; gap: 6px; }
+  .sm-lane-title {
+    font-size: 9.5px;
+    font-weight: 800;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+  .sm-lane-body { display: flex; flex-direction: column; gap: 14px; }
+  .sm-lane.app {
+    border: 1.5px dashed #b9d4f4;
+    border-radius: 14px;
+    padding: 12px 12px 14px;
+    background: linear-gradient(180deg, rgba(227, 240, 255, 0.4), rgba(227, 240, 255, 0));
+  }
+  .sm-lane.app .sm-lane-title { color: var(--accent); margin-bottom: 4px; }
+  .sm-lane.app .sm-lane-body { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
+
+  .sm-node {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    text-align: left;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    border-radius: 10px;
+    padding: 9px 11px;
+    font: inherit;
+    color: var(--ink);
+    cursor: pointer;
+    box-shadow: var(--shadow);
+    transition: transform 0.14s, border-color 0.14s, box-shadow 0.14s, opacity 0.14s;
+  }
+  .sm-node:hover { transform: translateY(-2px); border-color: var(--accent); }
+  .sm-node .ic { font-size: 16px; line-height: 1; flex-shrink: 0; }
+  .sm-node .lbl { display: block; font-size: 12px; font-weight: 700; letter-spacing: -0.01em; }
+  .sm-node .sub { display: block; font-size: 10px; font-weight: 500; color: var(--muted); margin-top: 1px; }
+  .sm-node.kafka { background: var(--brand); border-color: var(--brand); color: #fff; }
+  .sm-node.kafka .sub { color: rgba(255, 255, 255, 0.72); }
+  .sm-node.ext { background: #fbf1e4; border-color: #ecd8bc; }
+  .sm-node.ext .sub { color: #a97a3d; }
+  .sm-node.sel { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent), var(--shadow); }
+
+  .sysmap-stage[data-active] .sm-node:not(.lit) { opacity: 0.28; }
+  .sysmap-stage[data-active] .sm-node:not(.lit):hover { opacity: 0.6; }
+
+  .sm-edge { fill: none; stroke: var(--muted); stroke-width: 1.5; opacity: 0.85; }
+  .sm-edge.http { stroke: var(--accent); }
+  .sm-edge.kafka { stroke: var(--brand); stroke-width: 2; stroke-dasharray: 7 5; }
+  .sm-edge.ext { stroke: var(--warn); stroke-dasharray: 5 4; }
+  .sysmap-stage[data-active] .sm-edge:not(.lit) { opacity: 0.09; }
+  .sm-edge.lit { stroke-width: 2.6; opacity: 1; }
+  .sm-edge.flow { stroke-dasharray: 6 7; animation: sm-dash 0.9s linear infinite; }
+  @keyframes sm-dash { to { stroke-dashoffset: -26; } }
+
+  .sm-elabel {
+    font-size: 9px;
+    font-weight: 700;
+    fill: var(--ink-soft);
+    paint-order: stroke;
+    stroke: var(--surface);
+    stroke-width: 4px;
+    stroke-linejoin: round;
+    opacity: 0;
+    transition: opacity 0.14s;
+  }
+  .sm-elabel.lit { opacity: 1; }
+
+  .sysmap-stage.saga .sm-edge:not(.saga) { opacity: 0.07; }
+  .sysmap-stage.saga .sm-node:not(.saga) { opacity: 0.24; }
+  .sysmap-stage.saga .sm-edge.saga {
+    stroke: var(--accent);
+    stroke-width: 2.6;
+    opacity: 1;
+    stroke-dasharray: 6 7;
+    animation: sm-dash 0.9s linear infinite;
+  }
+  .sysmap-stage.saga .sm-elabel.saga { opacity: 1; }
+
+  .sm-detail { border-top: 1px solid var(--border); padding: 14px 16px; background: var(--surface-alt); }
+  .sm-detail h4 { margin: 0 0 3px; font-size: 13.5px; color: var(--brand); }
+  .sm-detail p { margin: 0; font-size: 12.5px; color: var(--ink-soft); max-width: 64ch; }
+  .sm-detail .sm-tags { margin-top: 8px; }
+  .sm-detail .sm-drill {
+    display: inline-block;
+    margin-top: 10px;
+    border: 1px solid var(--accent);
+    background: var(--accent);
+    color: #fff;
+    border-radius: 999px;
+    padding: 5px 13px;
+    font-size: 11.5px;
+    font-weight: 700;
+    cursor: pointer;
+  }
+  .sm-detail .sm-drill:hover { background: var(--accent-soft); color: var(--brand-800); }
+
+  /* ---------- C4 explorer ---------- */
+  .c4x {
+    margin: 16px 0;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    background: var(--surface);
+    box-shadow: var(--shadow);
+    overflow: hidden;
+  }
+  .c4-tabs {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 4px;
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--border);
+    background: var(--surface-alt);
+  }
+  .c4-tab {
+    border: 1px solid transparent;
+    background: transparent;
+    color: var(--muted);
+    border-radius: 999px;
+    padding: 5px 12px;
+    font: 700 12px/1 inherit;
+    cursor: pointer;
+    transition: background-color 0.14s, color 0.14s, border-color 0.14s;
+  }
+  .c4-tab:hover { color: var(--brand); }
+  .c4-tab.active { background: var(--brand); color: #fff; }
+  .c4-sep { color: var(--muted); font-size: 12px; padding: 0 2px; }
+  .c4-blurb {
+    padding: 12px 16px 4px;
+    font-size: 12.5px;
+    color: var(--ink-soft);
+    max-width: 70ch;
+  }
+  .c4-blurb code { font-size: 0.86em; }
+  .sm-lane.box {
+    border: 1.5px dashed #b9d4f4;
+    border-radius: 14px;
+    padding: 12px 12px 14px;
+    background: linear-gradient(180deg, rgba(227, 240, 255, 0.4), rgba(227, 240, 255, 0));
+  }
+  .sm-lane.box > .sm-lane-title { color: var(--accent); margin-bottom: 4px; }
+  .sm-lane.box > .sm-lane-body { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
+  .sm-node.c4-person { background: var(--accent-soft); border-color: #bcdcff; }
+  .sm-node.c4-system { background: var(--brand); border-color: var(--brand); color: #fff; }
+  .sm-node.c4-system .sub { color: rgba(255, 255, 255, 0.74); }
+  .sm-node.drill { cursor: zoom-in; padding-right: 24px; }
+  .sm-node.drill::after {
+    content: "⤢";
+    position: absolute;
+    top: 7px;
+    right: 9px;
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--accent);
+  }
+  .sm-node.c4-system.drill::after { color: #fff; }
+  .c4x .sm-lane:not(.box) .sm-node { max-width: 340px; }
+
+  /* state-machine / event-arch nodes */
+  .sm-node.sm-start {
+    justify-content: center;
+    gap: 0;
+    background: var(--ink);
+    border-color: var(--ink);
+    color: #fff;
+    font-size: 10px;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+  }
+  .sm-node.sm-terminal { background: var(--surface-alt); border-style: dashed; }
+  .sm-node.sm-terminal .lbl { color: var(--ink-soft); }
+  .sm-node.sm-good { border-color: var(--good); box-shadow: inset 3px 0 0 var(--good), var(--shadow); }
+  .sm-node.sm-bad { border-color: var(--warn); box-shadow: inset 3px 0 0 var(--warn), var(--shadow); }
+  .sm-node.sm-topic { background: var(--brand); border-color: var(--brand); color: #fff; font-family: ui-monospace, Consolas, monospace; }
+  .sm-node.sm-topic .lbl { font-weight: 700; }
+  .sm-node.sm-topic .sub { color: rgba(255, 255, 255, 0.7); font-family: inherit; }
+  .exp-lanes .sm-node { max-width: 280px; }
+  .exp-lanes .sm-node .lbl { font-size: 11px; overflow-wrap: anywhere; line-height: 1.25; }
+  .exp-lanes .sm-node.sm-start .lbl { font-size: 10px; }
+
+  /* vertical (top-to-bottom) flow — event architecture */
+  .exp-lanes.vertical { display: flex; flex-direction: column; gap: 44px; align-items: stretch; }
+  .exp-lanes.vertical .sm-lane { align-items: center; gap: 0; }
+  .exp-lanes.vertical .sm-lane-title {
+    font-size: 8.5px;
+    font-weight: 800;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--muted);
+    text-align: center;
+    margin-bottom: 7px;
+  }
+  .exp-lanes.vertical .sm-lane-body { flex-direction: row; justify-content: center; flex-wrap: wrap; gap: 16px; }
+  .exp-lanes.vertical .sm-node { width: 190px; max-width: 190px; }
+  .exp-lanes.vertical .sm-node.sm-start { width: 82px; max-width: 82px; padding: 7px 6px; }
+  .exp-lanes.vertical .sm-lane-body { gap: 13px; }
+  .exp-lanes.vertical .sm-node .lbl { font-size: 10.5px; overflow-wrap: normal; word-break: keep-all; letter-spacing: -0.02em; }
+  .vmode .sm-edge.ext { opacity: 0.42; }
+  .vmode .sm-edge.ext.lit { opacity: 1; }
+
+  /* tabbed state-machine: Booking / Order / Payment, each with Description / Table / Diagram */
+  #panel-state-machine .lede,
+  #panel-state-machine .sm-intro { max-width: none; }
+  #panel-state-machine .sm-intro { margin: 0 0 14px; font-size: 14px; color: var(--ink-soft); }
+  .sm-tabbed .c4-tabs { gap: 2px; }
+  .sm-part { padding: 14px 16px 8px; }
+  .sm-part[hidden] { display: none !important; }
+
+  .sm-subtabs { display: flex; gap: 2px; margin: 0 0 14px; border-bottom: 1px solid var(--border); }
+  .sm-subtab {
+    border: 0;
+    background: none;
+    padding: 6px 12px;
+    font: 600 12px/1 inherit;
+    color: var(--muted);
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    margin-bottom: -1px;
+  }
+  .sm-subtab:hover { color: var(--brand); }
+  .sm-subtab.active { color: var(--brand); border-bottom-color: var(--accent); }
+  .sm-view[hidden] { display: none !important; }
+
+  .sm-desc { margin: 4px 0 6px; font-size: 13px; line-height: 1.7; color: var(--ink); max-width: none; text-align: left; }
+  .sm-desc code { font-size: 0.85em; }
+
+  .sm-view[data-view="table"] .table-wrap { margin: 2px 0 6px; }
+  .sm-part table.sm-tt { font-size: 12.5px; }
+  .sm-part table.sm-tt th { padding: 7px 12px; }
+  .sm-part table.sm-tt td { padding: 7px 12px; vertical-align: middle; }
+  .sm-part table.sm-tt td:first-child,
+  .sm-part table.sm-tt td:last-child { font-family: ui-monospace, Consolas, monospace; font-size: 11px; color: var(--brand-800); white-space: nowrap; }
+  .sm-part table.sm-tt td:nth-child(2) { font-weight: 600; color: var(--ink-soft); }
+  .sm-part table.sm-tt td .muted { font-family: inherit; font-weight: 400; color: var(--muted); font-size: 11px; }
+
+  .sm-view[data-view="diagram"] > .sysmap-stage { margin: 0 -16px; }
+  .sm-view[data-view="diagram"] > .sm-detail { margin: 0 -16px; }
+  .sm-view-note { margin: 10px 0 0; font-size: 11.5px; color: var(--muted); }
+
   @media (max-width: 880px) {
     .shell { grid-template-columns: 1fr; }
     .rail { position: static; height: auto; border-right: none; border-bottom: 1px solid var(--border); }
@@ -316,7 +636,6 @@
   deployed on a single AWS free-tier instance behind Caddy.
 </footer>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/mermaid/11.3.0/mermaid.min.js"></script>
 <script>
 const SECTIONS = [
   {
@@ -337,6 +656,46 @@ const SECTIONS = [
         <div class="tile"><div class="ic">🐘</div><h4>One database</h4><p>PostgreSQL 16, per-domain tables, 13 Flyway migrations.</p></div>
       </div>
 
+      <h3>How the modules interact</h3>
+      <p>Every node in the middle lane runs in the single <code>app</code> JVM. Arrows are the <em>actual</em> calls
+      between modules &mdash; in-JVM <code>api</code>-package calls and Kafka topics, taken from the listener groups and
+      outbox publishers in the code. Hover a module to trace its wiring, click for detail, or hit
+      <em>Trace the booking saga</em> to walk one booking through all eight numbered hops.</p>
+      <div class="sysmap" id="sysmap">
+        <div class="sysmap-bar">
+          <button type="button" class="sm-toggle" id="smSaga">🔀&nbsp; Trace the booking saga</button>
+          <span class="sm-legend">
+            <span class="sm-key http">REST / in-JVM call</span>
+            <span class="sm-key kafka">Kafka topic</span>
+            <span class="sm-key ext">external / infra</span>
+          </span>
+        </div>
+        <div class="sysmap-stage">
+          <div class="sm-canvas" id="smCanvas">
+            <svg class="sm-edges" id="smEdges" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+              <defs>
+                <marker id="sm-tip" markerWidth="7" markerHeight="7" refX="5.5" refY="3" orient="auto-start-reverse">
+                  <path d="M0,0 L6,3 L0,6 Z" fill="context-stroke"></path>
+                </marker>
+              </defs>
+            </svg>
+            <div class="sm-lanes" id="smLanes"></div>
+          </div>
+        </div>
+        <div class="sm-detail" id="smDetail" hidden></div>
+      </div>
+      <p class="dcaption"><strong>The booking saga, hop by hop:</strong>
+      <b>1</b> SPA → booking-service (<code>POST /bookings</code>) ·
+      <b>2</b> booking-service → order-service (<code>booking.events</code>) ·
+      <b>3</b> order-service calls the flight module in-process to book with Duffel ·
+      <b>4</b> flight enqueues <code>BOOKING_CONFIRMED</code> into notification's outbox ·
+      <b>5</b> order-service → booking-service (<code>order.events</code>, booking goes CONFIRMED) ·
+      <b>6</b> notification sends the confirmation email ·
+      <b>7</b> SPA → payment-service (Razorpay checkout) ·
+      <b>8</b> payment-service → order-service (<code>payment.events</code>, order goes PAID).
+      Solid blue = a REST or in-JVM call · navy dashed = a Kafka topic (outbox in front, manual-ack consumer behind) ·
+      amber dashed = external / infra.</p>
+
       <h3>Stack</h3>
       <p>
         <span class="pill">Kotlin</span><span class="pill">Spring Boot 4</span><span class="pill">Spring AI</span>
@@ -352,93 +711,29 @@ const SECTIONS = [
   {
     id: "c4-model",
     title: "C4 Model",
-    lede: "The whole system at three zoom levels — context, containers, then the modules inside the one JVM.",
+    lede: "The same system at three zoom levels — context, containers, components. Switch levels from the tabs, or click a node with a ⤢ to zoom in.",
     html: `
-      <h3>Level 1 &mdash; System Context</h3>
-      <p>Who uses FlyStack and which third parties it depends on.</p>
-      <div class="diagram"><pre class="mermaid">
-C4Context
-  title System Context — FlyStack
-  Person(traveler, "Traveler", "Searches, books, pays")
-  System(flystack, "FlyStack", "Travel platform: search, booking saga, payments, AI assistant")
-  System_Ext(duffel, "Duffel API", "Flight offers + fulfillment")
-  System_Ext(razorpay, "Razorpay", "Checkout + webhooks")
-  System_Ext(llm, "LLM Provider", "Spring AI ranking")
-  System_Ext(smtp, "SMTP / Mailpit", "Email delivery")
-  Rel(traveler, flystack, "Uses")
-  Rel(flystack, duffel, "Searches & books")
-  BiRel(flystack, razorpay, "Pays / webhooks")
-  Rel(flystack, llm, "Prompts")
-  Rel(flystack, smtp, "Sends email")
-  UpdateLayoutConfig($c4ShapeInRow="4", $c4BoundaryInRow="1")
-      </pre></div>
-
-      <h3>Level 2 &mdash; Containers</h3>
-      <p>Everything runs on one EC2 free-tier box under Docker Compose; the <code>app</code> container is a single Spring Boot JVM.</p>
-      <div class="diagram"><pre class="mermaid">
-C4Container
-  title Containers — FlyStack (one EC2 box)
-  Person(traveler, "Traveler")
-  System_Ext(ext, "Duffel · Razorpay · LLM · SMTP", "External services")
-
-  Container_Boundary(host, "EC2 host — Docker Compose") {
-    Container(caddy, "Caddy", "Reverse proxy / TLS")
-    Container(spa, "SPA", "React + Vite (static)")
-    Container(app, "app", "Spring Boot 4 / Kotlin — one JVM", "7 domain modules")
-    ContainerDb(pg, "PostgreSQL 16", "domain + outbox tables, pg_trgm")
-    ContainerDb(redis, "Redis 7", "airport-search cache")
-    ContainerQueue(kafka, "Kafka (KRaft)", "5 topics")
-  }
-
-  Rel(traveler, caddy, "HTTPS")
-  Rel(caddy, spa, "serves")
-  Rel(caddy, app, "proxies API")
-  Rel(spa, app, "REST / JSON")
-  Rel(app, pg, "JDBC")
-  Rel(app, redis, "RESP")
-  Rel(app, kafka, "pub / sub")
-  BiRel(app, ext, "HTTPS / SMTP")
-  UpdateLayoutConfig($c4ShapeInRow="3", $c4BoundaryInRow="1")
-      </pre></div>
-
-      <h3>Level 3 &mdash; Components (inside <code>app</code>)</h3>
-      <p>The seven Maven modules and how requests flow through them. Cross-module work is Kafka events, never direct calls
-      &mdash; see <a href="#event-architecture">Event Architecture</a> for the topic topology. Every module owns its own tables
-      in the shared Postgres.</p>
-      <div class="diagram"><pre class="mermaid">
-C4Component
-  title Components — inside app
-  Container_Ext(spa, "SPA", "React")
-  System_Ext(duffel, "Duffel")
-  System_Ext(razorpay, "Razorpay")
-  System_Ext(llm, "LLM")
-  ContainerQueue_Ext(kafka, "Kafka")
-
-  Container_Boundary(app, "app — one JVM") {
-    Component(search, "search-service", "Kotlin", "search REST")
-    Component(searchai, "search-ai", "Spring AI", "agent + tool calling")
-    Component(flight, "flight (duffle-api)", "Kotlin", "Duffel client, airport sync")
-    Component(booking, "booking-service", "Kotlin", "booking state machine")
-    Component(order, "order-service", "Kotlin", "orchestration + reconciliation")
-    Component(payment, "payment-service", "Kotlin", "Razorpay + signature verify")
-    Component(notification, "notification", "Kotlin", "email pipeline")
-  }
-
-  Rel(spa, search, "search")
-  Rel(spa, booking, "POST /bookings")
-  Rel(spa, payment, "POST /payments")
-  Rel(searchai, search, "same search")
-  Rel(searchai, llm, "prompts")
-  Rel(search, flight, "offers")
-  Rel(order, flight, "create order")
-  Rel(flight, duffel, "HTTPS")
-  Rel(payment, razorpay, "HTTPS")
-  Rel(booking, kafka, "booking.events / order.events")
-  Rel(order, kafka, "saga topics")
-  Rel(payment, kafka, "payment.events")
-  Rel(notification, kafka, "booking-events / email-events")
-  UpdateLayoutConfig($c4ShapeInRow="3", $c4BoundaryInRow="1")
-      </pre></div>
+      <div class="c4x" id="c4x">
+        <div class="c4-tabs"></div>
+        <p class="c4-blurb"></p>
+        <div class="sysmap-stage">
+          <div class="sm-canvas">
+            <svg class="sm-edges" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+              <defs>
+                <marker id="c4-tip" markerWidth="7" markerHeight="7" refX="5.5" refY="3" orient="auto-start-reverse">
+                  <path d="M0,0 L6,3 L0,6 Z" fill="context-stroke"></path>
+                </marker>
+              </defs>
+            </svg>
+            <div class="sm-lanes exp-lanes"></div>
+          </div>
+        </div>
+        <div class="sm-detail" hidden></div>
+      </div>
+      <p class="dcaption">Boundaries (dashed boxes) are deployment units: everything inside runs on one EC2 free-tier box
+      under Docker Compose, and the <code>app</code> box is a single Spring Boot 4 JVM. Blue lines stay inside a boundary;
+      amber dashed lines cross to an external system. Shipped by GitHub Actions &rarr; an OIDC role &rarr;
+      <code>ssm send-command</code> on the box &mdash; no inbound SSH.</p>
     `,
   },
   {
@@ -542,139 +837,107 @@ topics:    single broker, KRaft mode, heap capped 256m</pre>
   {
     id: "state-machine",
     title: "State Machine",
-    lede: "Three domain entities are explicit state machines — every legal edge is in an ALLOWED map, and anything else throws.",
+    lede: "Booking, Order and Payment are each an explicit state machine — a fixed map of (state, event) → next state, taken straight from the code.",
     html: `
-      <p>Booking, Order and Payment each expose a <code>transition(event)</code> backed by an <code>ALLOWED</code> map of
-      <code>(state, event) &rarr; state</code>. An edge that isn't in the map throws <code>IllegalStateTransitionException</code>
-      (or <code>IllegalStateException</code> for Payment). Consumers catch it: a redelivered or out-of-order event whose edge no
-      longer fits the current state is logged and acked, because the entity is already where it should be &mdash; which is what
-      makes every consumer safe to replay.</p>
-
-      <h3>Booking &mdash; <code>BookingStatus</code> · booking-service</h3>
-      <p>States: <code>INITIATED</code> <code>IN_PROGRESS</code> <code>RESERVED</code> <code>CONFIRMED</code>
-      <code>CANCELLATION_PENDING</code> <code>CANCELLED</code> <code>FAILED</code> <code>EXPIRED</code></p>
-      <div class="diagram"><pre class="mermaid">
-stateDiagram-v2
-  [*] --> INITIATED
-  INITIATED --> IN_PROGRESS: PUBLISHED
-  INITIATED --> CANCELLED: CANCEL_REQUESTED
-  INITIATED --> EXPIRED: EXPIRED
-  IN_PROGRESS --> RESERVED: PROVIDER_RESERVED
-  IN_PROGRESS --> CONFIRMED: PROVIDER_CONFIRMED (fast path)
-  IN_PROGRESS --> FAILED: PROVIDER_FAILED
-  IN_PROGRESS --> CANCELLATION_PENDING: CANCEL_REQUESTED
-  IN_PROGRESS --> EXPIRED: EXPIRED
-  RESERVED --> CONFIRMED: PROVIDER_CONFIRMED
-  RESERVED --> FAILED: PROVIDER_FAILED
-  RESERVED --> CANCELLATION_PENDING: CANCEL_REQUESTED
-  RESERVED --> EXPIRED: EXPIRED
-  CONFIRMED --> CANCELLATION_PENDING: CANCEL_REQUESTED
-  CANCELLATION_PENDING --> CANCELLED: CANCEL_CONFIRMED
-  CANCELLED --> [*]
-  FAILED --> [*]
-  EXPIRED --> [*]
-      </pre></div>
-      <p class="dcaption">EXPIRED is driven by the scheduled <code>BookingExpirySweep</code>; every other edge comes from a
-      mapped <code>order.events</code> message.</p>
-      <div class="table-wrap"><table>
-        <thead><tr><th>From</th><th>Event</th><th>To</th></tr></thead>
-        <tbody>
-          <tr><td>INITIATED</td><td>PUBLISHED</td><td>IN_PROGRESS</td></tr>
-          <tr><td>INITIATED</td><td>CANCEL_REQUESTED</td><td>CANCELLED</td></tr>
-          <tr><td>INITIATED</td><td>EXPIRED</td><td>EXPIRED</td></tr>
-          <tr><td>IN_PROGRESS</td><td>PROVIDER_RESERVED</td><td>RESERVED</td></tr>
-          <tr><td>IN_PROGRESS</td><td>PROVIDER_CONFIRMED</td><td>CONFIRMED</td></tr>
-          <tr><td>IN_PROGRESS</td><td>PROVIDER_FAILED</td><td>FAILED</td></tr>
-          <tr><td>IN_PROGRESS</td><td>CANCEL_REQUESTED</td><td>CANCELLATION_PENDING</td></tr>
-          <tr><td>IN_PROGRESS</td><td>EXPIRED</td><td>EXPIRED</td></tr>
-          <tr><td>RESERVED</td><td>PROVIDER_CONFIRMED</td><td>CONFIRMED</td></tr>
-          <tr><td>RESERVED</td><td>PROVIDER_FAILED</td><td>FAILED</td></tr>
-          <tr><td>RESERVED</td><td>CANCEL_REQUESTED</td><td>CANCELLATION_PENDING</td></tr>
-          <tr><td>RESERVED</td><td>EXPIRED</td><td>EXPIRED</td></tr>
-          <tr><td>CONFIRMED</td><td>CANCEL_REQUESTED</td><td>CANCELLATION_PENDING</td></tr>
-          <tr><td>CANCELLATION_PENDING</td><td>CANCEL_CONFIRMED</td><td>CANCELLED</td></tr>
-        </tbody>
-      </table></div>
-      <p style="font-size:12px;color:var(--muted)">booking-service's <code>OrderEventConsumer</code> maps <code>order.events</code>
-      onto these: <code>OrderAwaitingConfirmation &rarr; PROVIDER_RESERVED</code>,
-      <code>OrderConfirmed &rarr; PROVIDER_CONFIRMED</code>,
-      <code>OrderFailed</code> / <code>OrderPaymentFailed &rarr; PROVIDER_FAILED</code>,
-      <code>OrderCancelled &rarr; CANCEL_CONFIRMED</code>. Post-confirmation order events (<code>OrderTicketed</code>, …) are
-      ignored &mdash; CONFIRMED is this service's terminal success state.</p>
-
-      <h3>Order &mdash; <code>OrderStatus</code> · order-service</h3>
-      <p>States: <code>DRAFT</code> <code>PENDING_SUBMISSION</code> <code>AWAITING_AIRLINE_CONFIRMATION</code>
-      <code>CONFIRMED</code> <code>TICKETED</code> <code>PAYMENT_FAILED</code> <code>FAILED</code> <code>CANCELLED</code>
-      &nbsp;(rows are inserted at <code>PENDING_SUBMISSION</code>; <code>DRAFT</code> is a legal but unused entry state)</p>
-      <div class="diagram"><pre class="mermaid">
-stateDiagram-v2
-  [*] --> PENDING_SUBMISSION
-  DRAFT --> PENDING_SUBMISSION: SUBMIT (unused)
-  PENDING_SUBMISSION --> CONFIRMED: DUFFEL_2XX_FULL
-  PENDING_SUBMISSION --> AWAITING_AIRLINE_CONFIRMATION: DUFFEL_PENDING
-  PENDING_SUBMISSION --> PAYMENT_FAILED: DUFFEL_PAYMENT_DECLINED
-  PENDING_SUBMISSION --> FAILED: DUFFEL_VALIDATION_FAILED
-  AWAITING_AIRLINE_CONFIRMATION --> CONFIRMED: WEBHOOK_CONFIRMED
-  AWAITING_AIRLINE_CONFIRMATION --> FAILED: RECONCILIATION_NOT_FOUND
-  CONFIRMED --> TICKETED: TICKETED
-  CONFIRMED --> CANCELLED: CANCEL
-  TICKETED --> CANCELLED: CANCEL
-  TICKETED --> [*]
-  PAYMENT_FAILED --> [*]
-  FAILED --> [*]
-  CANCELLED --> [*]
-      </pre></div>
-      <p class="dcaption">Separate from <code>status</code>, <code>customerPaymentStatus</code> moves
-      <code>AWAITING_PAYMENT → PAID</code> on <code>payment.captured</code> (see the callout below).</p>
-      <div class="table-wrap"><table>
-        <thead><tr><th>From</th><th>Event</th><th>To</th></tr></thead>
-        <tbody>
-          <tr><td>DRAFT</td><td>SUBMIT</td><td>PENDING_SUBMISSION <span style="color:var(--muted)">— legal, never raised</span></td></tr>
-          <tr><td>PENDING_SUBMISSION</td><td>DUFFEL_2XX_FULL</td><td>CONFIRMED</td></tr>
-          <tr><td>PENDING_SUBMISSION</td><td>DUFFEL_PENDING</td><td>AWAITING_AIRLINE_CONFIRMATION <span style="color:var(--muted)">— Duffel 202, or ambiguous 500</span></td></tr>
-          <tr><td>PENDING_SUBMISSION</td><td>DUFFEL_PAYMENT_DECLINED</td><td>PAYMENT_FAILED</td></tr>
-          <tr><td>PENDING_SUBMISSION</td><td>DUFFEL_VALIDATION_FAILED</td><td>FAILED</td></tr>
-          <tr><td>AWAITING_AIRLINE_CONFIRMATION</td><td>WEBHOOK_CONFIRMED</td><td>CONFIRMED</td></tr>
-          <tr><td>AWAITING_AIRLINE_CONFIRMATION</td><td>RECONCILIATION_NOT_FOUND</td><td>FAILED</td></tr>
-          <tr><td>CONFIRMED</td><td>TICKETED</td><td>TICKETED</td></tr>
-          <tr><td>CONFIRMED</td><td>CANCEL</td><td>CANCELLED</td></tr>
-          <tr><td>TICKETED</td><td>CANCEL</td><td>CANCELLED</td></tr>
-        </tbody>
-      </table></div>
-      <div class="callout">Customer payment is a <em>separate</em> field &mdash; <code>customerPaymentStatus</code>:
-      <code>AWAITING_PAYMENT &rarr; PAID</code>, flipped when <code>payment.captured</code> is consumed, an idempotent no-op if
-      already PAID. Deliberately not an edge in <code>OrderStatus</code>: airline fulfillment and customer payment move
-      independently.</div>
-
-      <h3>Payment &mdash; <code>PaymentStatus</code> · payment-service</h3>
-      <p>States: <code>CREATED</code> <code>ATTEMPTED</code> <code>CAPTURED</code> <code>FAILED</code> <code>REFUNDED</code></p>
-      <div class="diagram"><pre class="mermaid">
-stateDiagram-v2
-  [*] --> CREATED
-  CREATED --> ATTEMPTED: Attempted
-  CREATED --> CAPTURED: Captured
-  CREATED --> FAILED: Failed
-  ATTEMPTED --> CAPTURED: Captured
-  ATTEMPTED --> FAILED: Failed
-  FAILED --> CAPTURED: Captured (late auth)
-  CAPTURED --> REFUNDED: Refunded
-  CAPTURED --> [*]
-  REFUNDED --> [*]
-      </pre></div>
-      <p class="dcaption"><code>FAILED → CAPTURED</code> is Razorpay's documented late-authorisation edge (a
-      <code>payment.failed</code> followed by <code>payment.captured</code> for the same payment id).</p>
-      <div class="table-wrap"><table>
-        <thead><tr><th>From</th><th>Event</th><th>To</th></tr></thead>
-        <tbody>
-          <tr><td>CREATED</td><td>Attempted</td><td>ATTEMPTED</td></tr>
-          <tr><td>CREATED &middot; ATTEMPTED &middot; FAILED</td><td>Captured</td><td>CAPTURED</td></tr>
-          <tr><td>CREATED &middot; ATTEMPTED</td><td>Failed</td><td>FAILED</td></tr>
-          <tr><td>CAPTURED</td><td>Refunded</td><td>REFUNDED</td></tr>
-        </tbody>
-      </table></div>
-      <p>Re-applying the event an entity already reflects (<code>ATTEMPTED&rarr;Attempted</code>,
-      <code>CAPTURED&rarr;Captured</code>, …) is a no-op returning <code>false</code>. Any edge outside the table throws
-      <code>IllegalStateException</code> rather than walking captured money back to a non-terminal state.</p>
+      <p class="sm-intro">Any event that isn&rsquo;t in the map throws, and the consumer just logs it and moves on &mdash;
+      so a duplicate or out-of-order message can never corrupt a row.</p>
+      <div class="c4x sm-tabbed" id="smx">
+        <div class="c4-tabs" id="smTabs">
+          <button type="button" class="c4-tab active" data-sm="booking">Booking state machine</button>
+          <span class="c4-sep">&middot;</span>
+          <button type="button" class="c4-tab" data-sm="order">Order state machine</button>
+          <span class="c4-sep">&middot;</span>
+          <button type="button" class="c4-tab" data-sm="payment">Payment state machine</button>
+        </div>
+      <div class="sm-part" id="smPartBooking" data-sm="booking">
+        <div class="sm-subtabs">
+          <button type="button" class="sm-subtab active" data-view="desc">Description</button>
+          <button type="button" class="sm-subtab" data-view="table">Table</button>
+          <button type="button" class="sm-subtab" data-view="diagram">Diagram</button>
+        </div>
+        <div class="sm-view" data-view="desc"><p class="sm-desc"><b>What the traveller sees.</b> A booking is created the moment the traveller picks a flight, and it is done once the airline has either <b>confirmed</b> it or <b>turned it down</b>. <code>booking-service</code> mostly just listens: it advances the booking whenever <code>order-service</code> publishes an <code>order.events</code> message. The one edge it drives on its own is <code>EXPIRED</code> &mdash; a scheduled sweep gives up on a booking that was started but never finished.</p></div>
+        <div class="sm-view" data-view="table" hidden>
+        <div class="table-wrap"><table class="sm-tt">
+          <thead><tr><th>From state</th><th>Event</th><th>To state</th></tr></thead>
+          <tbody>
+            <tr><td>INITIATED</td><td>PUBLISHED</td><td>IN_PROGRESS</td></tr>
+            <tr><td>INITIATED</td><td>CANCEL_REQUESTED</td><td>CANCELLED</td></tr>
+            <tr><td>INITIATED</td><td>EXPIRED</td><td>EXPIRED</td></tr>
+            <tr><td>IN_PROGRESS</td><td>PROVIDER_RESERVED</td><td>RESERVED</td></tr>
+            <tr><td>IN_PROGRESS</td><td>PROVIDER_CONFIRMED</td><td>CONFIRMED</td></tr>
+            <tr><td>IN_PROGRESS</td><td>PROVIDER_FAILED</td><td>FAILED</td></tr>
+            <tr><td>IN_PROGRESS</td><td>CANCEL_REQUESTED</td><td>CANCELLATION_PENDING</td></tr>
+            <tr><td>IN_PROGRESS</td><td>EXPIRED</td><td>EXPIRED</td></tr>
+            <tr><td>RESERVED</td><td>PROVIDER_CONFIRMED</td><td>CONFIRMED</td></tr>
+            <tr><td>RESERVED</td><td>PROVIDER_FAILED</td><td>FAILED</td></tr>
+            <tr><td>RESERVED</td><td>CANCEL_REQUESTED</td><td>CANCELLATION_PENDING</td></tr>
+            <tr><td>RESERVED</td><td>EXPIRED</td><td>EXPIRED</td></tr>
+            <tr><td>CONFIRMED</td><td>CANCEL_REQUESTED</td><td>CANCELLATION_PENDING</td></tr>
+            <tr><td>CANCELLATION_PENDING</td><td>CANCEL_CONFIRMED</td><td>CANCELLED</td></tr>
+          </tbody>
+        </table></div>
+        </div>
+        <div class="sm-view" data-view="diagram" hidden>
+          <div class="sysmap-stage"><div class="sm-canvas"><svg class="sm-edges" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><defs><marker id="stm-b-tip" markerWidth="7" markerHeight="7" refX="5.5" refY="3" orient="auto-start-reverse"><path d="M0,0 L6,3 L0,6 Z" fill="context-stroke"></path></marker></defs></svg><div class="sm-lanes exp-lanes"></div></div></div>
+          <div class="sm-detail" hidden></div>
+          <p class="sm-view-note">Green left-bar = success state &middot; amber bar = failure state &middot; dashed box = terminal. Hover a state to trace its edges; click one for detail.</p>
+        </div>
+      </div>
+      <div class="sm-part" id="smPartOrder" hidden data-sm="order">
+        <div class="sm-subtabs">
+          <button type="button" class="sm-subtab active" data-view="desc">Description</button>
+          <button type="button" class="sm-subtab" data-view="table">Table</button>
+          <button type="button" class="sm-subtab" data-view="diagram">Diagram</button>
+        </div>
+        <div class="sm-view" data-view="desc"><p class="sm-desc"><b>The airline-side booking.</b> <code>order-service</code> creates one order per traveller booking, calls Duffel, and then records what happened: booked right away, still waiting for the airline&rsquo;s answer (a <code>202</code>), or refused. Whether the <em>customer</em> has paid is tracked on a separate field, so payment is <em>not</em> one of these transitions.</p></div>
+        <div class="sm-view" data-view="table" hidden>
+        <div class="table-wrap"><table class="sm-tt">
+          <thead><tr><th>From state</th><th>Event</th><th>To state</th></tr></thead>
+          <tbody>
+            <tr><td>DRAFT <span class="muted">(unused)</span></td><td>SUBMIT</td><td>PENDING_SUBMISSION</td></tr>
+            <tr><td>PENDING_SUBMISSION</td><td>DUFFEL_2XX_FULL</td><td>CONFIRMED</td></tr>
+            <tr><td>PENDING_SUBMISSION</td><td>DUFFEL_PENDING</td><td>AWAITING_AIRLINE_CONFIRMATION</td></tr>
+            <tr><td>PENDING_SUBMISSION</td><td>DUFFEL_PAYMENT_DECLINED</td><td>PAYMENT_FAILED</td></tr>
+            <tr><td>PENDING_SUBMISSION</td><td>DUFFEL_VALIDATION_FAILED</td><td>FAILED</td></tr>
+            <tr><td>AWAITING_AIRLINE_CONFIRMATION</td><td>WEBHOOK_CONFIRMED</td><td>CONFIRMED</td></tr>
+            <tr><td>AWAITING_AIRLINE_CONFIRMATION</td><td>RECONCILIATION_NOT_FOUND</td><td>FAILED</td></tr>
+            <tr><td>CONFIRMED</td><td>TICKETED</td><td>TICKETED</td></tr>
+            <tr><td>CONFIRMED</td><td>CANCEL</td><td>CANCELLED</td></tr>
+            <tr><td>TICKETED</td><td>CANCEL</td><td>CANCELLED</td></tr>
+          </tbody>
+        </table></div>
+        </div>
+        <div class="sm-view" data-view="diagram" hidden>
+          <div class="sysmap-stage"><div class="sm-canvas"><svg class="sm-edges" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><defs><marker id="stm-o-tip" markerWidth="7" markerHeight="7" refX="5.5" refY="3" orient="auto-start-reverse"><path d="M0,0 L6,3 L0,6 Z" fill="context-stroke"></path></marker></defs></svg><div class="sm-lanes exp-lanes"></div></div></div>
+          <div class="sm-detail" hidden></div>
+          <p class="sm-view-note">Green left-bar = success state &middot; amber bar = failure state &middot; dashed box = terminal. Hover a state to trace its edges; click one for detail.</p>
+        </div>
+      </div>
+      <div class="sm-part" id="smPartPayment" hidden data-sm="payment">
+        <div class="sm-subtabs">
+          <button type="button" class="sm-subtab active" data-view="desc">Description</button>
+          <button type="button" class="sm-subtab" data-view="table">Table</button>
+          <button type="button" class="sm-subtab" data-view="diagram">Diagram</button>
+        </div>
+        <div class="sm-view" data-view="desc"><p class="sm-desc"><b>One row per Razorpay checkout.</b> It moves forward as Razorpay reports what happened to the payment. Note that <code>FAILED</code> is <em>not</em> the end &mdash; Razorpay can send a failure and then a capture for the same payment (a late or retried charge), so <code>FAILED &rarr; CAPTURED</code> is a legal move.</p></div>
+        <div class="sm-view" data-view="table" hidden>
+        <div class="table-wrap"><table class="sm-tt">
+          <thead><tr><th>From state</th><th>Event</th><th>To state</th></tr></thead>
+          <tbody>
+            <tr><td>CREATED</td><td>Attempted</td><td>ATTEMPTED</td></tr>
+            <tr><td>CREATED &middot; ATTEMPTED &middot; FAILED</td><td>Captured</td><td>CAPTURED</td></tr>
+            <tr><td>CREATED &middot; ATTEMPTED</td><td>Failed</td><td>FAILED</td></tr>
+            <tr><td>CAPTURED</td><td>Refunded</td><td>REFUNDED</td></tr>
+          </tbody>
+        </table></div>
+        </div>
+        <div class="sm-view" data-view="diagram" hidden>
+          <div class="sysmap-stage"><div class="sm-canvas"><svg class="sm-edges" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><defs><marker id="stm-p-tip" markerWidth="7" markerHeight="7" refX="5.5" refY="3" orient="auto-start-reverse"><path d="M0,0 L6,3 L0,6 Z" fill="context-stroke"></path></marker></defs></svg><div class="sm-lanes exp-lanes"></div></div></div>
+          <div class="sm-detail" hidden></div>
+          <p class="sm-view-note">Green left-bar = success state &middot; amber bar = failure state &middot; dashed box = terminal. Hover a state to trace its edges; click one for detail.</p>
+        </div>
+      </div>
+      </div>
     `,
   },
   {
@@ -682,33 +945,25 @@ stateDiagram-v2
     title: "Event Architecture",
     lede: "Five topics — three for the saga, two for the notification pipeline — each with a transactional outbox in front and a manual-ack consumer behind.",
     html: `
-      <div class="diagram wide"><pre class="mermaid">
-flowchart LR
-  classDef svc fill:#e3f0ff,stroke:#1e88e5,color:#0e2c56,font-weight:600;
-  classDef ext fill:#fbf1e4,stroke:#a35a12,color:#0e2c56;
-
-  booking["booking-service"]:::svc
-  order["order-service"]:::svc
-  payment["payment-service"]:::svc
-  notif["notification"]:::svc
-  worker["notification · EmailWorker<br/>@RetryableTopic ×3"]:::svc
-  smtp(["SMTP / Mailpit"]):::ext
-  duffel(["Duffel — order created"]):::ext
-  razor(["Razorpay — payment captured"]):::ext
-
-  booking -- "booking.events" --> order
-  order -- "order.events" --> booking
-  razor -.-> payment
-  payment -- "payment.events" --> order
-  duffel -.-> order
-  order -- "booking-events" --> notif
-  notif -- "email-events" --> worker
-  worker -- "send (retry x3, then DLQ)" --> smtp
-      </pre></div>
-      <p class="dcaption">Solid arrows are Kafka topics; dotted arrows are the external callbacks that trigger a producer.
-      order-service both consumes <code>booking.events</code> + <code>payment.events</code> and produces <code>order.events</code>;
-      the notification trigger (<code>booking-events</code>) is enqueued by the <code>flight</code> module inside order-service's
-      saga transaction when Duffel confirms the order.</p>
+      <div class="c4x" id="evx">
+        <div class="c4-tabs" hidden></div>
+        <p class="c4-blurb"></p>
+        <div class="sysmap-stage">
+          <div class="sm-canvas">
+            <svg class="sm-edges" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+              <defs>
+                <marker id="evt-tip" markerWidth="7" markerHeight="7" refX="5.5" refY="3" orient="auto-start-reverse">
+                  <path d="M0,0 L6,3 L0,6 Z" fill="context-stroke"></path>
+                </marker>
+              </defs>
+            </svg>
+            <div class="sm-lanes exp-lanes"></div>
+          </div>
+        </div>
+        <div class="sm-detail" hidden></div>
+      </div>
+      <p class="dcaption">Navy dashed = a Kafka topic; amber dashed = an external callback. The full topic list, producers,
+      consumer groups and poll intervals are in the tables below.</p>
 
       <div class="table-wrap"><table>
         <thead><tr><th>Topic</th><th>Produced by</th><th>Consumed by (group)</th><th>Payload types</th></tr></thead>
@@ -967,12 +1222,927 @@ SECTIONS.forEach((s, i) => {
   main.appendChild(panel);
 });
 
+/* ---------- interactive system map (System Overview panel) ---------- */
+/* Node + edge data is derived from the actual module code: the @KafkaListener
+   groups, the outbox publishers, and the in-JVM api-package calls between
+   modules (order-service -> flight, flight -> notification, ...). */
+const SM_NODES = [
+  { id: "traveler", lane: "client", icon: "🧑", label: "Traveler", sub: "searches · books · pays",
+    detail: "The only human actor. Every flow begins with a search, an offer selection, or a Razorpay checkout." },
+  { id: "spa", lane: "client", icon: "⚛️", label: "React SPA", sub: "search UI + AI chat",
+    detail: "Static Vite bundle served by Caddy. Plain JSON REST to the app; polls order-service by idempotency key while the saga runs, then drives Razorpay checkout.", tags: ["React", "Vite", "Tailwind"] },
+  { id: "searchai", lane: "app", icon: "🧠", label: "search-ai", sub: "Spring AI agent",
+    detail: "Multi-turn agent. Extracts a FlightIntent with Mistral, resolves airports via the flight module, validates, and hands the SPA a ready-to-run search action.", tags: ["Spring AI", "Mistral", "structured output"] },
+  { id: "search", lane: "app", icon: "🔎", label: "search-service", sub: "ranking + airports",
+    detail: "POST /api/v1/flights/search. Calls the flight module for live Duffel offers, ranks them, and serves typo-tolerant airport search (Elasticsearch locally, pg_trgm on AWS).", tags: ["Elasticsearch", "pg_trgm", "Redis cache"] },
+  { id: "booking", lane: "app", icon: "🎫", label: "booking-service", sub: "booking state machine",
+    detail: "POST /bookings (Idempotency-Key). Writes the Booking row + a booking.events outbox row in one transaction, then consumes order.events to advance its status machine to CONFIRMED / FAILED.", tags: ["Outbox", "State machine"], saga: true },
+  { id: "order", lane: "app", icon: "📦", label: "order-service", sub: "saga orchestrator",
+    detail: "Consumes booking.events, inserts an Order, calls the flight module in-process to book with Duffel, publishes order.events. Separately consumes payment.events to set customerPaymentStatus = PAID.", tags: ["Outbox", "@Retryable", "Reconciliation"], saga: true },
+  { id: "flight", lane: "app", icon: "✈️", label: "flight", sub: "duffle-api",
+    detail: "The only module that calls Duffel. order-service invokes DuffelBookingService.createBooking() directly; on success it enqueues a BOOKING_CONFIRMED row into the notification module's outbox — inside order-service's transaction.", tags: ["Duffel API", "@Retryable"] },
+  { id: "payment", lane: "app", icon: "💳", label: "payment-service", sub: "Razorpay",
+    detail: "POST /payments + /payments/{id}/confirm from the SPA. HMAC-verifies the checkout signature and Razorpay webhooks, captures the payment, publishes payment.events (payment.captured).", tags: ["Razorpay", "HMAC verify"], saga: true },
+  { id: "notification", lane: "app", icon: "🔔", label: "notification", sub: "email pipeline",
+    detail: "Its outbox relay publishes booking-events; BookingEventConsumer re-publishes to email-events; EmailWorker (@RetryableTopic ×3 → DLQ) sends via SMTP and fans out email-status-events.", tags: ["@RetryableTopic", "DLQ"], saga: true },
+  { id: "pg", lane: "data", icon: "🐘", label: "PostgreSQL 16", sub: "system of record",
+    detail: "One instance, per-module table ownership, schema owned by 13 Flyway migrations. Holds domain tables and every module's outbox.", tags: ["Postgres 16", "pgvector", "Flyway"] },
+  { id: "redis", lane: "data", icon: "🟥", label: "Redis 7", sub: "search cache",
+    detail: "Caches ranked airport-search results, 24-hour TTL.", tags: ["Redis 7"] },
+  { id: "es", lane: "data", icon: "🧭", label: "Elasticsearch", sub: "local stack only",
+    detail: "Flight/airport index locally. The AWS profile drops it — pg_trgm covers typo tolerance and it frees ~900 MB on a 1 GiB box.", tags: ["ES 9", "profile-gated"] },
+  { id: "duffel", lane: "data", icon: "🌐", label: "Duffel API", sub: "flights",
+    detail: "External flight inventory and fulfillment. Also calls back: POST /webhooks/duffel (order.created) is how order-service confirms an async 202 booking.", tags: ["External", "webhook"] },
+  { id: "razorpay", lane: "data", icon: "💰", label: "Razorpay", sub: "payments",
+    detail: "Hosted checkout, plus POST /webhooks/razorpay (payment.captured / failed / refunded). Every callback is HMAC-verified before any state change.", tags: ["External", "webhook"] },
+  { id: "llm", lane: "data", icon: "🤖", label: "Mistral", sub: "via Spring AI",
+    detail: "Backs search-ai — extracts the structured FlightIntent from free-text chat.", tags: ["External"] },
+  { id: "smtp", lane: "data", icon: "✉️", label: "SMTP / Mailpit", sub: "email out",
+    detail: "Local inbox for booking-confirmation emails.", tags: ["SMTP"] },
+];
+const SM_LANES = [
+  { id: "client", title: "Client" },
+  { id: "app", title: "app · one Spring Boot 4 JVM" },
+  { id: "data", title: "Data & external" },
+];
+// [from, to, label, kind, saga?, step?]   from/to "app" = the whole app lane.
+// kind: http = REST or in-JVM call · kafka = a Kafka topic · ext = external / infra.
+const SM_EDGES = [
+  ["traveler", "spa", "", "http"],
+  ["spa", "searchai", "AI chat", "http"],
+  ["spa", "search", "search flights", "http"],
+  ["spa", "order", "poll order status", "http"],
+  ["searchai", "llm", "extract intent", "ext"],
+  ["searchai", "search", "resolve airports", "http"],
+  ["search", "flight", "DuffelFlightSearchService", "http"],
+  ["search", "redis", "cache", "ext"],
+  ["search", "es", "index", "ext"],
+  ["search", "duffel", "offer search", "ext"],
+  // ---- the booking saga, module -> module, in causal order ----
+  ["spa", "booking", "POST /bookings", "http", true, 1],
+  ["booking", "order", "booking.events · BookingCreated", "kafka", true, 2],
+  ["order", "flight", "createBooking()  (in-JVM)", "http", true, 3],
+  ["flight", "duffel", "POST /air/orders", "ext", true],
+  ["flight", "notification", "enqueue BOOKING_CONFIRMED", "http", true, 4],
+  ["order", "booking", "order.events · OrderConfirmed", "kafka", true, 5],
+  ["notification", "smtp", "booking-events → email-events → send", "kafka", true, 6],
+  ["spa", "payment", "POST /payments + confirm", "http", true, 7],
+  ["payment", "razorpay", "create order + capture", "ext", true],
+  ["payment", "order", "payment.events · payment.captured", "kafka", true, 8],
+  // external callbacks + persistence
+  ["duffel", "order", "webhook: order.created", "ext"],
+  ["razorpay", "payment", "webhook: payment.captured", "ext"],
+  ["app", "pg", "JDBC · per-module tables + outbox", "ext"],
+];
+const KAFKA_TOPICS = "booking.events · order.events · payment.events · booking-events · email-events";
+
+(function initSysmap() {
+  const root = document.getElementById("sysmap");
+  if (!root) return;
+  const lanesEl = document.getElementById("smLanes");
+  const canvas = document.getElementById("smCanvas");
+  const svg = document.getElementById("smEdges");
+  const stage = root.querySelector(".sysmap-stage");
+  const detail = document.getElementById("smDetail");
+  const sagaBtn = document.getElementById("smSaga");
+  const SVGNS = "http://www.w3.org/2000/svg";
+  const byId = {};
+  SM_NODES.forEach((n) => (byId[n.id] = n));
+  let built = false;
+  let pinned = null;
+  const edges = [];
+
+  const sagaOn = () => stage.classList.contains("saga");
+
+  function build() {
+    SM_LANES.forEach((lane) => {
+      const col = document.createElement("div");
+      col.className = "sm-lane " + lane.id;
+      if (lane.id === "app") col.id = "smLaneApp";
+      col.innerHTML = '<div class="sm-lane-title">' + lane.title + "</div>";
+      const body = document.createElement("div");
+      body.className = "sm-lane-body";
+      SM_NODES.filter((n) => n.lane === lane.id).forEach((n) => {
+        const b = document.createElement("button");
+        b.type = "button";
+        b.className = "sm-node" + (lane.id === "data" ? " ext" : "") + (n.saga ? " saga" : "");
+        b.dataset.id = n.id;
+        b.innerHTML =
+          '<span class="ic">' + n.icon + '</span><span class="txt"><span class="lbl">' + n.label +
+          '</span><span class="sub">' + n.sub + "</span></span>";
+        const enter = () => { if (!sagaOn()) focus(n.id); };
+        const leave = () => { if (!sagaOn()) restore(); };
+        b.addEventListener("mouseenter", enter);
+        b.addEventListener("mouseleave", leave);
+        b.addEventListener("focus", enter);
+        b.addEventListener("blur", leave);
+        b.addEventListener("click", () => {
+          if (sagaOn()) return;
+          pinned = pinned === n.id ? null : n.id;
+          document.querySelectorAll(".sm-node.sel").forEach((el) => el.classList.remove("sel"));
+          if (pinned) {
+            b.classList.add("sel");
+            focus(pinned);
+            detail.innerHTML =
+              "<h4>" + n.icon + "&nbsp; " + n.label + "</h4><p>" + n.detail + "</p>" +
+              (n.tags ? '<div class="sm-tags">' + n.tags.map((t) => '<span class="pill">' + t + "</span>").join("") + "</div>" : "");
+            detail.hidden = false;
+          } else {
+            restore();
+            detail.hidden = true;
+          }
+        });
+        body.appendChild(b);
+      });
+      col.appendChild(body);
+      lanesEl.appendChild(col);
+    });
+
+    // Kafka substrate: the navy dashed edges above all ride these topics.
+    const bar = document.createElement("div");
+    bar.className = "sm-kafka-bar";
+    bar.innerHTML = '<span class="kb-name">📨 Apache Kafka (KRaft)</span><span class="kb-topics">' + KAFKA_TOPICS + "</span>";
+    lanesEl.after(bar);
+
+    // A node is "in the saga" if it sits on either end of a saga edge.
+    const sagaSet = new Set();
+    SM_EDGES.forEach(([a, b, , , saga]) => { if (saga) { sagaSet.add(a); sagaSet.add(b); } });
+    sagaSet.forEach((id) => {
+      if (!byId[id]) return;
+      const el = lanesEl.querySelector('.sm-node[data-id="' + id + '"]');
+      if (el) el.classList.add("saga");
+    });
+
+    SM_EDGES.forEach(([a, b, label, kind, saga, step]) => {
+      const p = document.createElementNS(SVGNS, "path");
+      p.setAttribute("class", "sm-edge " + kind + (saga ? " saga" : ""));
+      p.setAttribute("marker-end", "url(#sm-tip)");
+      svg.appendChild(p);
+      let t = null;
+      if (label) {
+        t = document.createElementNS(SVGNS, "text");
+        t.setAttribute("class", "sm-elabel" + (saga ? " saga" : ""));
+        t.setAttribute("text-anchor", "middle");
+        t.textContent = label;
+        svg.appendChild(t);
+      }
+      let badge = null;
+      if (step) {
+        badge = document.createElementNS(SVGNS, "g");
+        badge.setAttribute("class", "sm-step" + (saga ? " saga" : ""));
+        const c = document.createElementNS(SVGNS, "circle");
+        c.setAttribute("r", "8");
+        const tx = document.createElementNS(SVGNS, "text");
+        tx.setAttribute("text-anchor", "middle");
+        tx.setAttribute("dy", "3");
+        tx.textContent = String(step);
+        badge.appendChild(c);
+        badge.appendChild(tx);
+        svg.appendChild(badge);
+      }
+      edges.push({ a, b, kind, saga: !!saga, step, path: p, text: t, badge });
+    });
+
+    stage.addEventListener("click", (ev) => {
+      if (ev.target === stage || ev.target === canvas || ev.target === lanesEl) {
+        pinned = null;
+        document.querySelectorAll(".sm-node.sel").forEach((el) => el.classList.remove("sel"));
+        restore();
+        detail.hidden = true;
+      }
+    });
+    sagaBtn.addEventListener("click", () => {
+      const on = stage.classList.toggle("saga");
+      sagaBtn.classList.toggle("on", on);
+      sagaBtn.innerHTML = on ? "✕&nbsp; Clear saga trace" : "🔀&nbsp; Trace the booking saga";
+      pinned = null;
+      document.querySelectorAll(".sm-node.sel").forEach((el) => el.classList.remove("sel"));
+      restore();
+      detail.hidden = true;
+    });
+
+    built = true;
+  }
+
+  const NORMALS = { r: [1, 0], l: [-1, 0], t: [0, -1], b: [0, 1] };
+  function rectIn(el) {
+    const r = el.getBoundingClientRect();
+    const c = canvas.getBoundingClientRect();
+    return { x: r.left - c.left, y: r.top - c.top, w: r.width, h: r.height };
+  }
+  function sides(f, t) {
+    const dx = t.x + t.w / 2 - (f.x + f.w / 2);
+    const dy = t.y + t.h / 2 - (f.y + f.h / 2);
+    if (Math.abs(dx) >= Math.abs(dy)) return [dx > 0 ? "r" : "l", dx > 0 ? "l" : "r"];
+    return [dy > 0 ? "b" : "t", dy > 0 ? "t" : "b"];
+  }
+  function anchor(r, s) {
+    if (s === "r") return [r.x + r.w, r.y + r.h / 2];
+    if (s === "l") return [r.x, r.y + r.h / 2];
+    if (s === "t") return [r.x + r.w / 2, r.y];
+    return [r.x + r.w / 2, r.y + r.h];
+  }
+  const resolve = (id) => (id === "app" ? document.getElementById("smLaneApp") : lanesEl.querySelector('.sm-node[data-id="' + id + '"]'));
+  function bez(t, p0, c1, c2, p3) {
+    const u = 1 - t;
+    return u * u * u * p0 + 3 * u * u * t * c1 + 3 * u * t * t * c2 + t * t * t * p3;
+  }
+
+  function layout() {
+    if (!built || !canvas.offsetWidth) return;
+    const W = canvas.offsetWidth;
+    const H = canvas.offsetHeight;
+    svg.setAttribute("viewBox", "0 0 " + W + " " + H);
+    svg.setAttribute("width", W);
+    svg.setAttribute("height", H);
+    edges.forEach((e) => {
+      const fe = resolve(e.a);
+      const te = resolve(e.b);
+      if (!fe || !te) return;
+      const fr = rectIn(fe);
+      const tr = rectIn(te);
+      const [s1, s2] = sides(fr, tr);
+      let [x1, y1] = anchor(fr, s1);
+      let [x2, y2] = anchor(tr, s2);
+      const reverse = edges.some((o) => o !== e && o.a === e.b && o.b === e.a);
+      if (reverse) {
+        const dx = x2 - x1;
+        const dy = y2 - y1;
+        const L = Math.hypot(dx, dy) || 1;
+        const off = (e.a < e.b ? 1 : -1) * 10;
+        x1 += (-dy / L) * off; y1 += (dx / L) * off;
+        x2 += (-dy / L) * off; y2 += (dx / L) * off;
+      }
+      const k = Math.max(34, Math.min(150, Math.hypot(x2 - x1, y2 - y1) * 0.42));
+      const n1 = NORMALS[s1];
+      const n2 = NORMALS[s2];
+      const c1x = x1 + n1[0] * k;
+      const c1y = y1 + n1[1] * k;
+      const c2x = x2 + n2[0] * k;
+      const c2y = y2 + n2[1] * k;
+      e.path.setAttribute("d", "M " + x1 + " " + y1 + " C " + c1x + " " + c1y + " " + c2x + " " + c2y + " " + x2 + " " + y2);
+      if (e.text) {
+        const lt = e.step ? 0.5 : 0.32;
+        e.text.setAttribute("x", bez(lt, x1, c1x, c2x, x2));
+        e.text.setAttribute("y", bez(lt, y1, c1y, c2y, y2) - (e.step ? 12 : 4));
+      }
+      if (e.badge) {
+        e.badge.setAttribute("transform",
+          "translate(" + bez(0.5, x1, c1x, c2x, x2) + " " + bez(0.5, y1, c1y, c2y, y2) + ")");
+      }
+    });
+  }
+
+  function connected(id) {
+    const nodes = new Set([id]);
+    const idx = new Set();
+    const inApp = byId[id] && byId[id].lane === "app";
+    edges.forEach((e, i) => {
+      const hit = e.a === id || e.b === id || (inApp && (e.a === "app" || e.b === "app"));
+      if (!hit) return;
+      idx.add(i);
+      if (e.a !== "app") nodes.add(e.a);
+      if (e.b !== "app") nodes.add(e.b);
+    });
+    return { nodes, idx };
+  }
+  function focus(id) {
+    const { nodes, idx } = connected(id);
+    stage.setAttribute("data-active", "");
+    lanesEl.querySelectorAll(".sm-node").forEach((n) => n.classList.toggle("lit", nodes.has(n.dataset.id)));
+    edges.forEach((e, i) => {
+      const on = idx.has(i);
+      e.path.classList.toggle("lit", on);
+      e.path.classList.toggle("flow", on);
+      if (e.text) e.text.classList.toggle("lit", on);
+      if (e.badge) e.badge.classList.toggle("lit", on);
+    });
+  }
+  function restore() {
+    if (pinned) { focus(pinned); return; }
+    stage.removeAttribute("data-active");
+    lanesEl.querySelectorAll(".sm-node.lit").forEach((n) => n.classList.remove("lit"));
+    edges.forEach((e) => {
+      e.path.classList.remove("lit", "flow");
+      if (e.text) e.text.classList.remove("lit");
+      if (e.badge) e.badge.classList.remove("lit");
+    });
+  }
+
+  let raf = 0;
+  function schedule() {
+    if (raf) return;
+    raf = requestAnimationFrame(() => { raf = 0; layout(); });
+  }
+  window.addEventListener("resize", schedule);
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(schedule);
+
+  window.__setupSysmap = function () {
+    if (!built) build();
+    schedule();
+    setTimeout(layout, 60);
+    setTimeout(layout, 260);
+  };
+})();
+
+/* ---------- interactive C4 explorer (C4 Model panel) ---------- */
+/* Three levels, derived from the code + config/docker-compose.aws.yml +
+   config/Caddyfile: context -> containers -> components. */
+const C4 = {
+  context: {
+    tab: "Context",
+    blurb: "<b>Level 1 — System Context.</b> Who uses FlyStack and the third parties it talks to. Click <b>FlyStack ⤢</b> to open the container view.",
+    lanes: [
+      { id: "left", title: "Person", w: "120px" },
+      { id: "mid", title: "Software system", w: "minmax(300px, 1fr)" },
+      { id: "right", title: "External systems", w: "150px" },
+    ],
+    nodes: [
+      { id: "traveler", lane: "left", cls: "c4-person", icon: "🧑", label: "Traveler", sub: "Person",
+        detail: "Searches flights (form or AI chat), picks an offer, and pays by card." },
+      { id: "flystack", lane: "mid", cls: "c4-system", drill: "container", icon: "🚀", label: "FlyStack", sub: "Travel platform",
+        detail: "Flight search + an AI assistant, a choreographed booking saga across seven modules, and card payments — all one deployable Spring Boot JVM on a single free-tier box." },
+      { id: "duffel", lane: "right", cls: "ext", icon: "🌐", label: "Duffel API", sub: "External system",
+        detail: "Flight inventory and order fulfillment. Also calls FlyStack back with an order.created webhook for async bookings." },
+      { id: "razorpay", lane: "right", cls: "ext", icon: "💰", label: "Razorpay", sub: "External system",
+        detail: "Hosted card checkout, plus payment.captured / failed / refunded webhooks. Every callback is HMAC-verified before any state change." },
+      { id: "mistral", lane: "right", cls: "ext", icon: "🤖", label: "Mistral", sub: "External system · Spring AI",
+        detail: "The LLM behind search-ai — turns a free-text message into a structured FlightIntent." },
+      { id: "smtp", lane: "right", cls: "ext", icon: "✉️", label: "SMTP / Mailpit", sub: "External system",
+        detail: "Delivers the booking-confirmation email. Mailpit stands in for a real relay in this deployment." },
+    ],
+    edges: [
+      ["traveler", "flystack", "searches · books · pays", "http"],
+      ["flystack", "duffel", "offer search · book · ← webhook", "ext"],
+      ["flystack", "razorpay", "checkout · ← webhook", "ext"],
+      ["flystack", "mistral", "prompt → intent", "ext"],
+      ["flystack", "smtp", "confirmation email", "ext"],
+    ],
+  },
+  container: {
+    tab: "Containers",
+    blurb: "<b>Level 2 — Containers.</b> One EC2 box, Docker Compose. Caddy terminates TLS for <code>aatikatechstack.com</code> and reverse-proxies everything to the <code>app</code> JVM, which also serves the built SPA from its static resources. Click <b>app ⤢</b> for the components.",
+    lanes: [
+      { id: "left", title: "Person", w: "120px" },
+      { id: "box", title: "EC2 host · Docker Compose", w: "minmax(320px, 1fr)" },
+      { id: "right", title: "External systems", w: "150px" },
+    ],
+    nodes: [
+      { id: "traveler", lane: "left", cls: "c4-person", icon: "🧑", label: "Traveler", sub: "Person",
+        detail: "Browser client on aatikatechstack.com." },
+      { id: "caddy", lane: "box", icon: "🧱", label: "Caddy", sub: "reverse proxy · auto-TLS",
+        detail: "config/Caddyfile: www.aatikatechstack.com → reverse_proxy 127.0.0.1:8090; the apex host 301-redirects to www. Automatic Let's Encrypt certificate." },
+      { id: "app", lane: "box", drill: "component", icon: "🍃", label: "app", sub: "Spring Boot 4 · Kotlin · one JVM",
+        detail: "SPRING_PROFILES_ACTIVE=aws, -Xmx320m, ExitOnOutOfMemoryError + restart:unless-stopped. Serves the Vite-built SPA from app/src/main/resources/static and hosts all seven domain modules." },
+      { id: "pg", lane: "box", icon: "🐘", label: "PostgreSQL 16", sub: "system of record",
+        detail: "postgres:16-alpine. Per-module domain tables + every outbox, schema owned by 13 Flyway migrations." },
+      { id: "redis", lane: "box", icon: "🟥", label: "Redis 7", sub: "airport-search cache",
+        detail: "redis:7-alpine. Caches ranked airport-search results (24h TTL)." },
+      { id: "kafka", lane: "box", icon: "📨", label: "Kafka (KRaft)", sub: "5 topics · -Xmx256m",
+        detail: "Single-broker KRaft. booking.events · order.events · payment.events · booking-events · email-events, plus the email retry / DLT topics." },
+      { id: "duffel", lane: "right", cls: "ext", icon: "🌐", label: "Duffel API", sub: "External",
+        detail: "HTTPS out for offers + orders; POST /webhooks/duffel back in." },
+      { id: "razorpay", lane: "right", cls: "ext", icon: "💰", label: "Razorpay", sub: "External",
+        detail: "HTTPS out for checkout + capture; POST /webhooks/razorpay back in." },
+      { id: "mistral", lane: "right", cls: "ext", icon: "🤖", label: "Mistral", sub: "External",
+        detail: "HTTPS out from search-ai." },
+      { id: "smtp", lane: "right", cls: "ext", icon: "✉️", label: "Mailpit", sub: "SMTP :1025",
+        detail: "axllent/mailpit. The notification EmailWorker sends here." },
+      { id: "es", lane: "right", cls: "ext", icon: "🧭", label: "Elasticsearch", sub: "local stack only",
+        detail: "In the full local compose only. The aws profile drops it — pg_trgm covers typo-tolerant airport search and it frees ~900 MB." },
+    ],
+    edges: [
+      ["traveler", "caddy", "HTTPS", "http"],
+      ["caddy", "app", "reverse_proxy → :8090  (SPA + API)", "http"],
+      ["app", "pg", "JDBC", "http"],
+      ["app", "redis", "RESP", "http"],
+      ["app", "kafka", "pub / sub", "http"],
+      ["app", "duffel", "HTTPS  ·  ← webhook", "ext"],
+      ["app", "razorpay", "HTTPS  ·  ← webhook", "ext"],
+      ["app", "mistral", "HTTPS", "ext"],
+      ["app", "smtp", "SMTP", "ext"],
+      ["app", "es", "index (local only)", "ext"],
+    ],
+  },
+  component: {
+    tab: "Components",
+    blurb: "<b>Level 3 — Components inside <code>app</code>.</b> The seven Kotlin modules (ArchUnit-enforced boundaries) and the calls between them — in-JVM <code>api</code>-package calls and Kafka topics, from the listener groups and outbox publishers in the code.",
+    lanes: [
+      { id: "left", title: "Client", w: "120px" },
+      { id: "box", title: "app · one Spring Boot 4 JVM", w: "minmax(320px, 1fr)" },
+      { id: "right", title: "Backing services", w: "150px" },
+    ],
+    nodes: [
+      { id: "spa", lane: "left", cls: "c4-person", icon: "⚛️", label: "SPA", sub: "React + Vite (static)",
+        detail: "Built into app/src/main/resources/static. Calls the modules over JSON REST and polls order-service by idempotency key." },
+      { id: "searchai", lane: "box", icon: "🧠", label: "search-ai", sub: "Spring AI agent",
+        detail: "AssistantController. Extracts a FlightIntent with Mistral, resolves airports via the flight module, validates, returns a ready search action." },
+      { id: "search", lane: "box", icon: "🔎", label: "search-service", sub: "search + airports",
+        detail: "FlightSearchController. Calls DuffelFlightSearchService for live offers, ranks them; typo-tolerant airport search via pg_trgm / Elasticsearch." },
+      { id: "flight", lane: "box", icon: "✈️", label: "flight", sub: "duffle-api",
+        detail: "The only Duffel client. order-service calls DuffelBookingService.createBooking() in-process; on success it enqueues BOOKING_CONFIRMED into notification's outbox." },
+      { id: "booking", lane: "box", icon: "🎫", label: "booking-service", sub: "booking state machine",
+        detail: "BookingController + OrderEventConsumer (group booking-service). Writes Booking + booking.events outbox in one tx; consumes order.events to reach CONFIRMED / FAILED." },
+      { id: "order", lane: "box", icon: "📦", label: "order-service", sub: "saga orchestrator",
+        detail: "BookingSagaConsumer + PaymentEventConsumer (group order-service). Books via flight, publishes order.events, flips customerPaymentStatus = PAID on payment.captured, runs reconciliation." },
+      { id: "payment", lane: "box", icon: "💳", label: "payment-service", sub: "Razorpay",
+        detail: "PaymentController + RazorpayWebhookController. HMAC-verifies checkout signature + webhooks, captures, publishes payment.events." },
+      { id: "notification", lane: "box", icon: "🔔", label: "notification", sub: "email pipeline",
+        detail: "Outbox → booking-events → BookingEventConsumer → email-events → EmailWorker (@RetryableTopic ×3 → DLT) → SMTP, plus an email-status-events fan-out." },
+      { id: "kafka", lane: "right", cls: "ext", icon: "📨", label: "Kafka", sub: "5 topics",
+        detail: "Every producer writes through a DB outbox relay; consumers are manual-ack with a per-module group." },
+      { id: "pg", lane: "right", cls: "ext", icon: "🐘", label: "PostgreSQL", sub: "per-module tables",
+        detail: "Each module owns its own tables and its own outbox in the one database." },
+      { id: "duffel", lane: "right", cls: "ext", icon: "🌐", label: "Duffel", sub: "External" },
+      { id: "razorpay", lane: "right", cls: "ext", icon: "💰", label: "Razorpay", sub: "External" },
+      { id: "mistral", lane: "right", cls: "ext", icon: "🤖", label: "Mistral", sub: "External" },
+      { id: "smtp", lane: "right", cls: "ext", icon: "✉️", label: "SMTP", sub: "External" },
+    ],
+    edges: [
+      ["spa", "searchai", "AI chat", "http"],
+      ["spa", "search", "search flights", "http"],
+      ["spa", "booking", "POST /bookings", "http"],
+      ["spa", "payment", "POST /payments", "http"],
+      ["spa", "order", "poll status", "http"],
+      ["searchai", "mistral", "prompt", "ext"],
+      ["searchai", "search", "resolve airports", "http"],
+      ["search", "flight", "DuffelFlightSearchService", "http"],
+      ["search", "pg", "pg_trgm airports", "http"],
+      ["order", "flight", "createBooking()", "http"],
+      ["flight", "duffel", "orders", "ext"],
+      ["flight", "notification", "BOOKING_CONFIRMED", "http"],
+      ["payment", "razorpay", "checkout + capture", "ext"],
+      ["booking", "kafka", "booking.events / order.events", "kafka"],
+      ["order", "kafka", "saga topics", "kafka"],
+      ["payment", "kafka", "payment.events", "kafka"],
+      ["notification", "kafka", "booking-events / email-events", "kafka"],
+      ["notification", "smtp", "send", "ext"],
+      ["order", "pg", "orders + outbox", "http"],
+      ["booking", "pg", "bookings + outbox", "http"],
+      ["payment", "pg", "payments + outbox", "http"],
+    ],
+  },
+};
+const C4_ORDER = ["context", "container", "component"];
+
+/* ---------- state machines (BookingStatus / OrderStatus / PaymentStatus) ----------
+   Edges are the ALLOWED map from the code, verbatim. */
+const STATE_MACHINES = {
+  booking: {
+    tab: "Booking", minW: 760,
+    blurb: "<b><code>BookingStatus</code> · booking-service.</b> Blue is the happy path straight down; amber branches are failure / cancellation / expiry. Every edge is a row in <code>BookingStatusEvent.ALLOWED</code> — anything else throws <code>IllegalStateTransitionException</code>, which <code>OrderEventConsumer</code> catches, logs and acks. <code>EXPIRED</code> comes from the scheduled <code>BookingExpirySweep</code>; every other edge is a mapped <code>order.events</code> message.",
+    lanes: [
+      { id: "b1", title: "entry" },
+      { id: "b2", title: "in flight" },
+      { id: "b3", title: "success" },
+      { id: "b4", title: "cancelling" },
+      { id: "b5", title: "terminal" },
+    ],
+    nodes: [
+      { id: "start", lane: "b1", cls: "sm-start", label: "START", detail: "A new booking row is inserted at INITIATED." },
+      { id: "INITIATED", lane: "b1", icon: "🆕", label: "INITIATED", sub: "row created",
+        detail: "Booking + a booking.events outbox row committed in one transaction. Waiting for BookingOutboxPublisher to publish BookingCreated." },
+      { id: "IN_PROGRESS", lane: "b2", icon: "⏳", label: "IN_PROGRESS", sub: "PUBLISHED",
+        detail: "booking.events was published; order-service has the saga. Awaiting an order.events outcome." },
+      { id: "RESERVED", lane: "b2", icon: "🔒", label: "RESERVED", sub: "PROVIDER_RESERVED",
+        detail: "Duffel returned a hold (202-style). Waiting for the order.created webhook / reconciliation to confirm." },
+      { id: "CONFIRMED", lane: "b3", cls: "sm-good", icon: "✅", label: "CONFIRMED", sub: "terminal success",
+        detail: "Duffel booked the order. This service's terminal success state — post-confirmation order events (OrderTicketed…) are ignored." },
+      { id: "CANCELLATION_PENDING", lane: "b4", icon: "🔁", label: "CANCELLATION_PENDING", sub: "awaiting CANCEL_CONFIRMED",
+        detail: "A cancellation was requested from IN_PROGRESS / RESERVED / CONFIRMED. Awaiting CANCEL_CONFIRMED." },
+      { id: "CANCELLED", lane: "b5", cls: "sm-terminal", icon: "🚫", label: "CANCELLED", detail: "Cancellation confirmed (or requested straight from INITIATED)." },
+      { id: "FAILED", lane: "b5", cls: "sm-terminal sm-bad", icon: "❌", label: "FAILED", detail: "PROVIDER_FAILED — Duffel rejected the order (validation / payment)." },
+      { id: "EXPIRED", lane: "b5", cls: "sm-terminal", icon: "⌛", label: "EXPIRED", detail: "BookingExpirySweep timed out an abandoned booking." },
+    ],
+    edges: [
+      ["start", "INITIATED", "", "http"],
+      ["INITIATED", "IN_PROGRESS", "PUBLISHED", "http"],
+      ["IN_PROGRESS", "RESERVED", "PROVIDER_RESERVED", "http"],
+      ["IN_PROGRESS", "CONFIRMED", "PROVIDER_CONFIRMED  (fast path)", "http"],
+      ["RESERVED", "CONFIRMED", "PROVIDER_CONFIRMED", "http"],
+      ["CANCELLATION_PENDING", "CANCELLED", "CANCEL_CONFIRMED", "http"],
+      ["INITIATED", "CANCELLED", "CANCEL_REQUESTED", "ext"],
+      ["INITIATED", "EXPIRED", "EXPIRED", "ext"],
+      ["IN_PROGRESS", "FAILED", "PROVIDER_FAILED", "ext"],
+      ["IN_PROGRESS", "CANCELLATION_PENDING", "CANCEL_REQUESTED", "ext"],
+      ["IN_PROGRESS", "EXPIRED", "EXPIRED", "ext"],
+      ["RESERVED", "FAILED", "PROVIDER_FAILED", "ext"],
+      ["RESERVED", "CANCELLATION_PENDING", "CANCEL_REQUESTED", "ext"],
+      ["RESERVED", "EXPIRED", "EXPIRED", "ext"],
+      ["CONFIRMED", "CANCELLATION_PENDING", "CANCEL_REQUESTED", "ext"],
+    ],
+  },
+  order: {
+    tab: "Order", minW: 800,
+    blurb: "<b><code>OrderStatus</code> · order-service.</b> Rows are inserted at <code>PENDING_SUBMISSION</code> (<code>DRAFT</code> is a legal but unused entry). Airline fulfillment and customer payment move independently — <code>customerPaymentStatus</code> (<code>AWAITING_PAYMENT → PAID</code> on <code>payment.captured</code>) is deliberately <em>not</em> an edge here.",
+    lanes: [
+      { id: "b1", title: "submission" },
+      { id: "b2", title: "awaiting airline" },
+      { id: "b3", title: "booked" },
+      { id: "b4", title: "ticketed" },
+      { id: "b5", title: "terminal" },
+    ],
+    nodes: [
+      { id: "start", lane: "b1", cls: "sm-start", label: "START", detail: "Order row inserted at PENDING_SUBMISSION by BookingSagaConsumer." },
+      { id: "DRAFT", lane: "b1", cls: "sm-terminal", icon: "📝", label: "DRAFT", sub: "unused entry", detail: "A legal entry state kept for a future 'insert then submit' flow; this codebase never raises SUBMIT." },
+      { id: "PENDING_SUBMISSION", lane: "b1", icon: "📤", label: "PENDING_SUBMISSION", sub: "calling Duffel",
+        detail: "order-service is calling the flight module (DuffelBookingService.createBooking) in-process and awaiting the outcome." },
+      { id: "AWAITING_AIRLINE_CONFIRMATION", lane: "b2", icon: "🛬", label: "AWAITING_AIRLINE_CONFIRMATION", sub: "DUFFEL_PENDING",
+        detail: "Duffel returned 202 (or an ambiguous 500). Resolved by the order.created webhook (WEBHOOK_CONFIRMED) or the reconciliation sweep (RECONCILIATION_NOT_FOUND)." },
+      { id: "CONFIRMED", lane: "b3", cls: "sm-good", icon: "✅", label: "CONFIRMED", sub: "booked",
+        detail: "Duffel confirmed the order. Publishes OrderConfirmed on order.events. Can still be TICKETED or CANCELLED." },
+      { id: "TICKETED", lane: "b4", cls: "sm-good", icon: "🎟️", label: "TICKETED", sub: "e-tickets issued", detail: "A later Duffel signal that tickets were issued. A separate concern from customer payment." },
+      { id: "PAYMENT_FAILED", lane: "b5", cls: "sm-terminal sm-bad", icon: "💳", label: "PAYMENT_FAILED", detail: "DUFFEL_PAYMENT_DECLINED — Duffel refused the payment leg of the order." },
+      { id: "FAILED", lane: "b5", cls: "sm-terminal sm-bad", icon: "❌", label: "FAILED", detail: "DUFFEL_VALIDATION_FAILED, or RECONCILIATION_NOT_FOUND for an order Duffel never actually created." },
+      { id: "CANCELLED", lane: "b5", cls: "sm-terminal", icon: "🚫", label: "CANCELLED", detail: "CANCEL is legal from either CONFIRMED or TICKETED." },
+    ],
+    edges: [
+      ["start", "PENDING_SUBMISSION", "", "http"],
+      ["PENDING_SUBMISSION", "AWAITING_AIRLINE_CONFIRMATION", "DUFFEL_PENDING", "http"],
+      ["PENDING_SUBMISSION", "CONFIRMED", "DUFFEL_2XX_FULL  (fast path)", "http"],
+      ["AWAITING_AIRLINE_CONFIRMATION", "CONFIRMED", "WEBHOOK_CONFIRMED", "http"],
+      ["CONFIRMED", "TICKETED", "TICKETED", "http"],
+      ["DRAFT", "PENDING_SUBMISSION", "SUBMIT  (unused)", "ext"],
+      ["PENDING_SUBMISSION", "PAYMENT_FAILED", "DUFFEL_PAYMENT_DECLINED", "ext"],
+      ["PENDING_SUBMISSION", "FAILED", "DUFFEL_VALIDATION_FAILED", "ext"],
+      ["AWAITING_AIRLINE_CONFIRMATION", "FAILED", "RECONCILIATION_NOT_FOUND", "ext"],
+      ["CONFIRMED", "CANCELLED", "CANCEL", "ext"],
+      ["TICKETED", "CANCELLED", "CANCEL", "ext"],
+    ],
+  },
+  payment: {
+    tab: "Payment", minW: 520,
+    blurb: "<b><code>PaymentStatus</code> · payment-service.</b> <code>Payment.applyEvent</code> — re-applying an event the entity already reflects is a no-op (<code>false</code>); anything outside the table throws <code>IllegalStateException</code> rather than walking captured money back. <code>FAILED</code> is deliberately <em>not</em> terminal.",
+    lanes: [
+      { id: "b1", title: "created" },
+      { id: "b2", title: "attempted" },
+      { id: "b3", title: "captured" },
+      { id: "b4", title: "terminal" },
+    ],
+    nodes: [
+      { id: "start", lane: "b1", cls: "sm-start", label: "START", detail: "A payment row is created when the SPA calls POST /payments." },
+      { id: "CREATED", lane: "b1", icon: "🧾", label: "CREATED", sub: "Razorpay order made",
+        detail: "A Razorpay order exists; the customer hasn't acted yet. Captured / Failed can both arrive straight from here." },
+      { id: "ATTEMPTED", lane: "b2", icon: "⏳", label: "ATTEMPTED", sub: "razorpayPaymentId recorded",
+        detail: "The customer submitted the checkout; a razorpayPaymentId is now recorded." },
+      { id: "CAPTURED", lane: "b3", cls: "sm-good", icon: "✅", label: "CAPTURED", sub: "money in",
+        detail: "Funds captured. Emits payment.captured on payment.events → order-service flips customerPaymentStatus = PAID." },
+      { id: "FAILED", lane: "b4", cls: "sm-bad", icon: "❌", label: "FAILED", sub: "not terminal",
+        detail: "A failed attempt. NOT terminal: Razorpay documents payment.failed followed by payment.captured for the same id (late authorisation / a retried UPI collect)." },
+      { id: "REFUNDED", lane: "b4", cls: "sm-terminal", icon: "↩️", label: "REFUNDED", detail: "A full refund flipped the payment on Razorpay's side. Money that moved, then moved back — not a failure mode." },
+    ],
+    edges: [
+      ["start", "CREATED", "", "http"],
+      ["CREATED", "ATTEMPTED", "Attempted", "http"],
+      ["CREATED", "CAPTURED", "Captured", "http"],
+      ["ATTEMPTED", "CAPTURED", "Captured", "http"],
+      ["FAILED", "CAPTURED", "Captured  (late auth)", "http"],
+      ["CREATED", "FAILED", "Failed", "ext"],
+      ["ATTEMPTED", "FAILED", "Failed", "ext"],
+      ["CAPTURED", "REFUNDED", "Refunded", "ext"],
+    ],
+  },
+};
+
+/* ---------- event architecture: one booking's events, top to bottom ---------- */
+const EVENT_ARCH = {
+  main: {
+    tab: "",
+    minW: 560,
+    blurb: "One booking's events, read top to bottom. Straight down the middle is the fulfilment pipeline; the two arrows curving back <em>up</em> are the signals to an earlier stage &mdash; <code>order.events</code> (the airline outcome) and <code>payment.events</code> (the customer paid). Every producer writes through a DB outbox relay; every consumer is manual-ack with its own group. Click a box for the exact publisher / consumer.",
+    lanes: [
+      { id: "L1", title: "1 · booking created" },
+      { id: "L2", title: "2 · orchestration" },
+      { id: "L3", title: "3 · notify" },
+      { id: "L4", title: "4 · deliver" },
+      { id: "L5", title: "later · customer pays" },
+    ],
+    nodes: [
+      { id: "booking", lane: "L1", icon: "🎫", label: "booking-service", sub: "publishes booking.events",
+        detail: "Writes the Booking row + a booking.events outbox row in ONE transaction. BookingOutboxPublisher polls every 1s (SKIP LOCKED, key = bookingId) and publishes BookingCreated." },
+      { id: "duffel", lane: "L2", cls: "ext", icon: "🌐", label: "Duffel", sub: "order.created webhook",
+        detail: "order-service books through the flight module in-process. For an async 202, Duffel later calls POST /webhooks/duffel (order.created) → WEBHOOK_CONFIRMED." },
+      { id: "order", lane: "L2", icon: "📦", label: "order-service", sub: "consumes booking.events + payment.events",
+        detail: "BookingSagaConsumer + PaymentEventConsumer (group order-service). Books via the flight module, then OutboxRelay (500ms, FOR UPDATE SKIP LOCKED) publishes order.events. The booking-events row is enqueued inside this same saga transaction." },
+      { id: "notification", lane: "L3", icon: "🔔", label: "notification", sub: "booking-events → email-events",
+        detail: "BookingEventConsumer (group notification-service) consumes booking-events (BOOKING_CONFIRMED); NotificationService then publishes an email-events send request." },
+      { id: "worker", lane: "L4", icon: "📧", label: "EmailWorker", sub: "consumes email-events",
+        detail: "group email-worker, @RetryableTopic: 3 attempts, 5min → 30min backoff via email-events-retry-0/-1, then email-events-dlt. Also fans out email-status-events." },
+      { id: "smtp", lane: "L4", cls: "ext", icon: "✉️", label: "SMTP / Mailpit", sub: "delivery",
+        detail: "Final delivery of the booking-confirmation email." },
+      { id: "razorpay", lane: "L5", cls: "ext", icon: "💰", label: "Razorpay", sub: "payment.* webhook",
+        detail: "POST /webhooks/razorpay (payment.captured / failed / refunded). HMAC-verified, processed once via webhook_events." },
+      { id: "payment", lane: "L5", icon: "💳", label: "payment-service", sub: "publishes payment.events",
+        detail: "On capture, PaymentOutboxPublisher (1s, key = orderId) publishes payment.captured." },
+    ],
+    edges: [
+      ["booking", "order", "booking.events · BookingCreated", "kafka"],
+      ["duffel", "order", "webhook · order.created", "ext"],
+      ["order", "booking", "order.events · OrderConfirmed / Failed", "kafka"],
+      ["order", "notification", "booking-events · BOOKING_CONFIRMED", "kafka"],
+      ["notification", "worker", "email-events · send request", "kafka"],
+      ["worker", "smtp", "send", "ext"],
+      ["razorpay", "payment", "webhook · payment.captured", "ext"],
+      ["payment", "order", "payment.events · payment.captured", "kafka"],
+    ],
+  },
+};
+
+/* ---------- generic lane-graph explorer (shared by C4, state machines, event arch) ---------- */
+function initExplorer(root, views, order, opts) {
+  opts = opts || {};
+  if (!root) return { setup() {} };
+  const tabsEl = root.querySelector(".c4-tabs");
+  const blurbEl = root.querySelector(".c4-blurb");
+  const lanesEl = root.querySelector(".exp-lanes");
+  const canvas = root.querySelector(".sm-canvas");
+  const svg = root.querySelector(".sm-edges");
+  const stage = root.querySelector(".sysmap-stage");
+  const detail = root.querySelector(".sm-detail");
+  const marker = "url(#" + svg.querySelector("marker").id + ")";
+  const SVGNS = "http://www.w3.org/2000/svg";
+  const NORMALS = { r: [1, 0], l: [-1, 0], t: [0, -1], b: [0, 1] };
+  let level = order[0];
+  let pinned = null;
+  let edges = [];
+
+  const bez = (t, a, b, c, d) => { const u = 1 - t; return u * u * u * a + 3 * u * u * t * b + 3 * u * t * t * c + t * t * t * d; };
+  function rectIn(el) {
+    const r = el.getBoundingClientRect(), c = canvas.getBoundingClientRect();
+    return { x: r.left - c.left, y: r.top - c.top, w: r.width, h: r.height };
+  }
+  function sides(f, t) {
+    const dx = t.x + t.w / 2 - (f.x + f.w / 2), dy = t.y + t.h / 2 - (f.y + f.h / 2);
+    if (Math.abs(dx) >= Math.abs(dy)) return [dx > 0 ? "r" : "l", dx > 0 ? "l" : "r"];
+    return [dy > 0 ? "b" : "t", dy > 0 ? "t" : "b"];
+  }
+  function anchor(r, s) {
+    if (s === "r") return [r.x + r.w, r.y + r.h / 2];
+    if (s === "l") return [r.x, r.y + r.h / 2];
+    if (s === "t") return [r.x + r.w / 2, r.y];
+    return [r.x + r.w / 2, r.y + r.h];
+  }
+  const resolve = (id) => lanesEl.querySelector('.sm-node[data-id="' + CSS.escape(id) + '"]');
+
+  function renderTabs() {
+    if (tabsEl == null) return;
+    if (order.length < 2) { tabsEl.hidden = true; return; }
+    tabsEl.innerHTML = "";
+    order.forEach((id, i) => {
+      if (i) {
+        const sep = document.createElement("span");
+        sep.className = "c4-sep";
+        sep.textContent = "›";
+        tabsEl.appendChild(sep);
+      }
+      const b = document.createElement("button");
+      b.type = "button";
+      b.className = "c4-tab" + (id === level ? " active" : "");
+      b.textContent = views[id].tab;
+      b.addEventListener("click", () => go(id));
+      tabsEl.appendChild(b);
+    });
+  }
+  function go(id) {
+    level = id;
+    pinned = null;
+    if (detail) detail.hidden = true;
+    renderTabs();
+    render();
+  }
+
+  function render() {
+    const data = views[level];
+    if (blurbEl) blurbEl.innerHTML = data.blurb || "";
+    lanesEl.innerHTML = "";
+    svg.querySelectorAll(".sm-edge, .sm-elabel").forEach((n) => n.remove());
+    edges = [];
+
+    lanesEl.classList.toggle("vertical", !!opts.vertical);
+    stage.classList.toggle("vmode", !!opts.vertical);
+    if (opts.vertical) {
+      lanesEl.style.gridTemplateColumns = "";
+      canvas.style.minWidth = (data.minW || 540) + "px";
+    } else {
+      lanesEl.style.gridTemplateColumns = data.lanes
+        .map((l) => l.w || "minmax(136px, 1fr)")
+        .join(" ");
+      canvas.style.minWidth = Math.max(700, data.lanes.length * 168) + "px";
+    }
+
+    data.lanes.forEach((lane) => {
+      const col = document.createElement("div");
+      col.className = "sm-lane " + lane.id + (lane.box ? " box" : "");
+      col.innerHTML = '<div class="sm-lane-title">' + lane.title + "</div>";
+      const body = document.createElement("div");
+      body.className = "sm-lane-body";
+      data.nodes.filter((n) => n.lane === lane.id).forEach((n) => {
+        const b = document.createElement("button");
+        b.type = "button";
+        b.className = "sm-node" + (n.cls ? " " + n.cls : "") + (n.drill ? " drill" : "");
+        b.dataset.id = n.id;
+        const ic = n.icon ? '<span class="ic">' + n.icon + "</span>" : "";
+        b.innerHTML = ic + '<span class="txt"><span class="lbl">' + n.label +
+          "</span>" + (n.sub ? '<span class="sub">' + n.sub + "</span>" : "") + "</span>";
+        b.addEventListener("mouseenter", () => focus(n.id));
+        b.addEventListener("mouseleave", restore);
+        b.addEventListener("focus", () => focus(n.id));
+        b.addEventListener("blur", restore);
+        b.addEventListener("click", () => {
+          if (!detail) return;
+          pinned = pinned === n.id ? null : n.id;
+          lanesEl.querySelectorAll(".sm-node.sel").forEach((el) => el.classList.remove("sel"));
+          if (!pinned) { restore(); detail.hidden = true; return; }
+          b.classList.add("sel");
+          focus(n.id);
+          detail.innerHTML =
+            "<h4>" + (n.icon ? n.icon + "&nbsp; " : "") + n.label +
+            (n.sub ? "  <span style='color:var(--muted);font-weight:600'>· " + n.sub + "</span>" : "") + "</h4>" +
+            "<p>" + (n.detail || "") + "</p>" +
+            (n.drill ? '<button type="button" class="sm-drill" data-drill="' + n.drill + '">Zoom in to ' + views[n.drill].tab + " &rarr;</button>" : "");
+          detail.hidden = false;
+        });
+        body.appendChild(b);
+      });
+      col.appendChild(body);
+      lanesEl.appendChild(col);
+    });
+
+    data.edges.forEach(([a, b, label, kind]) => {
+      const p = document.createElementNS(SVGNS, "path");
+      p.setAttribute("class", "sm-edge " + kind);
+      p.setAttribute("marker-end", marker);
+      svg.appendChild(p);
+      let t = null;
+      if (label) {
+        t = document.createElementNS(SVGNS, "text");
+        t.setAttribute("class", "sm-elabel");
+        t.setAttribute("text-anchor", "middle");
+        t.textContent = label;
+        svg.appendChild(t);
+      }
+      edges.push({ a, b, kind, path: p, text: t });
+    });
+
+    schedule();
+    setTimeout(layout, 60);
+    setTimeout(layout, 260);
+  }
+
+  function layout() {
+    if (!canvas.offsetWidth || !edges.length) return;
+    const W = canvas.offsetWidth, H = canvas.offsetHeight;
+    svg.setAttribute("viewBox", "0 0 " + W + " " + H);
+    svg.setAttribute("width", W);
+    svg.setAttribute("height", H);
+    edges.forEach((e) => {
+      const fe = resolve(e.a), te = resolve(e.b);
+      if (!fe || !te) return;
+      const fr = rectIn(fe), tr = rectIn(te);
+      const fcy = fr.y + fr.h / 2, tcy = tr.y + tr.h / 2;
+      let s1, s2;
+      let bracket = 0; // 0 = normal, +1 = bow right, -1 = bow left
+      if (opts.vertical && e.a !== e.b) {
+        const dyc = tcy - fcy;
+        if (Math.abs(dyc) < 40) { [s1, s2] = sides(fr, tr); }        // same band → sideways
+        else if (e.kind === "ext") { s1 = "r"; s2 = "r"; bracket = 1; } // failure branch → bow right
+        else if (Math.abs(dyc) > 150) { s1 = "l"; s2 = "l"; bracket = -1; } // skips a band → bow left
+        else { const up = dyc < 0; s1 = up ? "t" : "b"; s2 = up ? "b" : "t"; } // adjacent band → straight
+      } else {
+        [s1, s2] = sides(fr, tr);
+      }
+      let [x1, y1] = anchor(fr, s1);
+      let [x2, y2] = anchor(tr, s2);
+      const reverse = edges.some((o) => o !== e && o.a === e.b && o.b === e.a);
+      if (reverse) {
+        const dx = x2 - x1, dy = y2 - y1, L = Math.hypot(dx, dy) || 1;
+        const off = (e.a < e.b ? 1 : -1) * 10;
+        x1 += (-dy / L) * off; y1 += (dx / L) * off;
+        x2 += (-dy / L) * off; y2 += (dx / L) * off;
+      }
+      let c1x, c1y, c2x, c2y;
+      if (bracket) {
+        const reach = bracket * Math.max(50, Math.min(104, Math.abs(y2 - y1) * 0.4));
+        c1x = x1 + reach; c1y = y1 + (y2 - y1) * 0.15;
+        c2x = x2 + reach; c2y = y2 - (y2 - y1) * 0.15;
+      } else {
+        const k = Math.max(30, Math.min(140, Math.hypot(x2 - x1, y2 - y1) * 0.4));
+        const n1 = NORMALS[s1], n2 = NORMALS[s2];
+        c1x = x1 + n1[0] * k; c1y = y1 + n1[1] * k; c2x = x2 + n2[0] * k; c2y = y2 + n2[1] * k;
+      }
+      e.path.setAttribute("d", "M " + x1 + " " + y1 + " C " + c1x + " " + c1y + " " + c2x + " " + c2y + " " + x2 + " " + y2);
+      if (e.text) {
+        e.text.setAttribute("x", bez(0.36, x1, c1x, c2x, x2));
+        e.text.setAttribute("y", bez(0.36, y1, c1y, c2y, y2) - 4);
+      }
+    });
+  }
+
+  function connected(id) {
+    const nodes = new Set([id]), idx = new Set();
+    edges.forEach((e, i) => { if (e.a === id || e.b === id) { idx.add(i); nodes.add(e.a); nodes.add(e.b); } });
+    return { nodes, idx };
+  }
+  function focus(id) {
+    const { nodes, idx } = connected(id);
+    stage.setAttribute("data-active", "");
+    lanesEl.querySelectorAll(".sm-node").forEach((n) => n.classList.toggle("lit", nodes.has(n.dataset.id)));
+    edges.forEach((e, i) => {
+      const on = idx.has(i);
+      e.path.classList.toggle("lit", on);
+      e.path.classList.toggle("flow", on);
+      if (e.text) e.text.classList.toggle("lit", on);
+    });
+  }
+  function restore() {
+    if (pinned) { focus(pinned); return; }
+    stage.removeAttribute("data-active");
+    lanesEl.querySelectorAll(".sm-node.lit").forEach((n) => n.classList.remove("lit"));
+    edges.forEach((e) => { e.path.classList.remove("lit", "flow"); if (e.text) e.text.classList.remove("lit"); });
+  }
+
+  if (detail) {
+    detail.addEventListener("click", (ev) => {
+      const btn = ev.target.closest(".sm-drill");
+      if (btn) go(btn.dataset.drill);
+    });
+  }
+  stage.addEventListener("click", (ev) => {
+    if (ev.target === stage || ev.target === canvas || ev.target === lanesEl) {
+      pinned = null;
+      lanesEl.querySelectorAll(".sm-node.sel").forEach((el) => el.classList.remove("sel"));
+      restore();
+      if (detail) detail.hidden = true;
+    }
+  });
+
+  let raf = 0;
+  function schedule() {
+    if (raf) return;
+    raf = requestAnimationFrame(() => { raf = 0; layout(); });
+  }
+  window.addEventListener("resize", schedule);
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(schedule);
+
+  let started = false;
+  return {
+    setup() {
+      if (!started) { started = true; renderTabs(); render(); }
+      else schedule();
+    },
+  };
+}
+
+const SM_PARTS = {
+  booking: initExplorer(document.getElementById("smPartBooking"), STATE_MACHINES, ["booking"], { vertical: true }),
+  order: initExplorer(document.getElementById("smPartOrder"), STATE_MACHINES, ["order"], { vertical: true }),
+  payment: initExplorer(document.getElementById("smPartPayment"), STATE_MACHINES, ["payment"], { vertical: true }),
+};
+const EXPLORERS = {
+  "c4-model": initExplorer(document.getElementById("c4x"), C4, C4_ORDER, { drill: true }),
+  "event-architecture": initExplorer(document.getElementById("evx"), EVENT_ARCH, ["main"], { vertical: true }),
+};
+(function () {
+  const root = document.getElementById("smx");
+  const tabs = document.getElementById("smTabs");
+  if (!root || !tabs) return;
+  let current = "booking";
+  const cap = (k) => k[0].toUpperCase() + k.slice(1);
+  const partOf = (k) => document.getElementById("smPart" + cap(k));
+
+  function showView(part, view) {
+    part.querySelectorAll(".sm-subtab").forEach((b) => b.classList.toggle("active", b.dataset.view === view));
+    part.querySelectorAll(".sm-view").forEach((v) => { v.hidden = v.dataset.view !== view; });
+    if (view === "diagram") SM_PARTS[part.dataset.sm].setup();
+  }
+  function showPart(key) {
+    current = key;
+    tabs.querySelectorAll(".c4-tab").forEach((b) => b.classList.toggle("active", b.dataset.sm === key));
+    ["booking", "order", "payment"].forEach((k) => { partOf(k).hidden = k !== key; });
+    const part = partOf(key);
+    if ((part.querySelector(".sm-subtab.active") || {}).dataset?.view === "diagram") SM_PARTS[key].setup();
+  }
+
+  tabs.addEventListener("click", (e) => {
+    const b = e.target.closest(".c4-tab");
+    if (b && b.dataset.sm) showPart(b.dataset.sm);
+  });
+  root.addEventListener("click", (e) => {
+    const b = e.target.closest(".sm-subtab");
+    if (b) showView(b.closest(".sm-part"), b.dataset.view);
+  });
+  EXPLORERS["state-machine"] = { setup() { showPart(current); } };
+})();
+window.__setupC4 = () => EXPLORERS["c4-model"] && EXPLORERS["c4-model"].setup();
+
 function show(id) {
   const target = SECTIONS.some((s) => s.id === id) ? id : SECTIONS[0].id;
   document.querySelectorAll(".panel").forEach((p) => p.classList.toggle("active", p.id === "panel-" + target));
   document.querySelectorAll(".nav-link").forEach((n) => n.classList.toggle("active", n.dataset.id === target));
   window.scrollTo(0, 0);
   renderDiagrams(document.getElementById("panel-" + target));
+  if (target === "system-overview" && window.__setupSysmap) window.__setupSysmap();
+  if (EXPLORERS[target]) EXPLORERS[target].setup();
 }
 
 navList.addEventListener("click", (e) => {

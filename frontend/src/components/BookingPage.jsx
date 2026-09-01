@@ -18,20 +18,72 @@ function travelerCategories(passengers) {
   return categories.length > 0 ? categories : ['Adult']
 }
 
-function validate(travelers, contact) {
-  const errors = travelers.map((traveler) => {
+// Duffel rejects a passenger whose `type` (fixed from the traveller category
+// chosen at search time) is inconsistent with their date of birth --
+// "Field 'type' does not match date of birth for this passenger" -- and it
+// spends the offer doing so. These bands mirror Duffel's own age
+// definitions (child: 2-11, infant: under 2, adult: 12+) so the mismatch is
+// caught before we submit.
+const AGE_BANDS = {
+  Adult: { min: 12, max: 120, label: 'aged 12 or over' },
+  Child: { min: 2, max: 11, label: 'aged 2 to 11' },
+  Infant: { min: 0, max: 1, label: 'under 2' },
+}
+
+// E.164: a leading "+", country code, then up to 15 digits total. Duffel
+// requires this shape and rejects anything else as an invalid phone_number.
+const PHONE_RE = /^\+[1-9]\d{6,14}$/
+
+function ageOnDate(dateOfBirth, onDate) {
+  const birth = new Date(`${dateOfBirth}T00:00:00`)
+  let age = onDate.getFullYear() - birth.getFullYear()
+  const monthDelta = onDate.getMonth() - birth.getMonth()
+  if (monthDelta < 0 || (monthDelta === 0 && onDate.getDate() < birth.getDate())) age -= 1
+  return age
+}
+
+function dateOfBirthError(dateOfBirth, category, travelDate) {
+  if (!dateOfBirth) return 'Required'
+  const birth = new Date(`${dateOfBirth}T00:00:00`)
+  if (Number.isNaN(birth.getTime())) return 'Enter a valid date'
+  if (birth > new Date()) return 'Date of birth cannot be in the future'
+
+  const band = AGE_BANDS[category] ?? AGE_BANDS.Adult
+  const age = ageOnDate(dateOfBirth, travelDate)
+  if (age < band.min || age > band.max) {
+    return `A traveller booked as ${category} must be ${band.label} on the travel date`
+  }
+  return null
+}
+
+function phoneError(phoneNumber) {
+  if (!phoneNumber.trim()) return 'Required'
+  const compact = phoneNumber.replace(/[\s()-]/g, '')
+  if (!PHONE_RE.test(compact)) return 'Use international format, e.g. +14155550123'
+  return null
+}
+
+function validate(travelers, contact, categories, travelDate) {
+  const errors = travelers.map((traveler, index) => {
     const fieldErrors = {}
     if (!traveler.givenName.trim()) fieldErrors.givenName = 'Required'
     if (!traveler.familyName.trim()) fieldErrors.familyName = 'Required'
-    if (!traveler.dateOfBirth) fieldErrors.dateOfBirth = 'Required'
+
+    const dobError = dateOfBirthError(traveler.dateOfBirth, categories[index] ?? 'Adult', travelDate)
+    if (dobError) fieldErrors.dateOfBirth = dobError
+
     if (!traveler.email.trim()) fieldErrors.email = 'Required'
-    if (!traveler.phoneNumber.trim()) fieldErrors.phoneNumber = 'Required'
+
+    const travelerPhoneError = phoneError(traveler.phoneNumber)
+    if (travelerPhoneError) fieldErrors.phoneNumber = travelerPhoneError
+
     return fieldErrors
   })
 
   const contactErrors = {}
   if (!contact.email.trim()) contactErrors.email = 'Required'
-  if (!contact.phoneNumber.trim()) contactErrors.phoneNumber = 'Required'
+  const contactPhoneError = phoneError(contact.phoneNumber)
+  if (contactPhoneError) contactErrors.phoneNumber = contactPhoneError
 
   const isValid = errors.every((e) => Object.keys(e).length === 0) && Object.keys(contactErrors).length === 0
   return { errors, contactErrors, isValid }
@@ -140,9 +192,16 @@ export default function BookingPage({ offer, passengers, onBackToResults }) {
       ? { email: travelers[0].email, phoneNumber: travelers[0].phoneNumber }
       : contact
 
+  // Airlines check passenger age as of the date of travel, not today.
+  const travelDate = useMemo(() => {
+    const raw = offer.slices?.[0]?.departureTime
+    const parsed = raw ? new Date(raw) : null
+    return parsed && !Number.isNaN(parsed.getTime()) ? parsed : new Date()
+  }, [offer])
+
   const handleSubmit = async (event) => {
     event.preventDefault()
-    const { errors, contactErrors, isValid } = validate(travelers, effectiveContact)
+    const { errors, contactErrors, isValid } = validate(travelers, effectiveContact, categories, travelDate)
     setValidation({ errors, contactErrors })
     if (!isValid) return
 
