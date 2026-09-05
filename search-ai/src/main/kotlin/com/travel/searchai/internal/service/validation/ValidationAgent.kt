@@ -9,7 +9,7 @@ import org.springframework.stereotype.Service
 import tools.jackson.databind.ObjectMapper
 
 @Service
-class ValidationAgent(@Qualifier("mistralChatClient")private val chatClient: ChatClient,
+class ValidationAgent(@Qualifier("geminiChatClient")private val chatClient: ChatClient,
                       private val promptOrchestrator: PromptOrchestrator,
                       private val objectMapper: ObjectMapper
 ) {
@@ -19,7 +19,7 @@ class ValidationAgent(@Qualifier("mistralChatClient")private val chatClient: Cha
         val prompt = promptOrchestrator
             .build("flight-validation-agent",intentJson,sessionId)
         return chatClient.prompt(prompt).call().entity(ValidationResult::class.java)
-            ?:error("Empty Response From Mistral Client")
+            ?:error("Empty Response From Gemini Client")
     }
 
     private val RELATIVE_DATE = Regex("""^(today|tomorrow|unknown|in_\d+_days)$""")

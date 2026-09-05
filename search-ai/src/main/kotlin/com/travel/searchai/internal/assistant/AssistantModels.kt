@@ -18,7 +18,7 @@ data class AssistantMessageResponse(
     val action: AssistantAction? = null,
 )
 
-// Shape Mistral is prompted to return - kept separate from AssistantMessageResponse since the
+// Shape Gemini is prompted to return - kept separate from AssistantMessageResponse since the
 // model deals in free-text city/airport names and a coarse relative date, not resolved IATA
 // codes or ISO dates.
 internal data class MistralFlightIntent(

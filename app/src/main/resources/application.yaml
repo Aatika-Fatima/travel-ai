@@ -5,10 +5,11 @@ spring:
   application:
     name: search-service
   ai:
-    mistralai:
-      api-key: ${MISTRAL_API_KEY}
-      chat:
-        model: mistral-small-latest
+    google:
+      genai:
+        api-key: ${GEMINI_API_KEY}
+        chat:
+          model: gemini-flash-latest
   elasticsearch:
     uris: ${ELASTICSEARCH_URIS:http://localhost:9200}
     connection-timeout: 2s

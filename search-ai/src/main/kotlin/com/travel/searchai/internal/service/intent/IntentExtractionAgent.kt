@@ -8,13 +8,13 @@ import org.springframework.stereotype.Service
 
 @Service
 class IntentExtractionAgent(
-    @Qualifier("mistralChatClient") private val chatClient: ChatClient,
+    @Qualifier("geminiChatClient") private val chatClient: ChatClient,
     private val promptOrchestrator: PromptOrchestrator,
 ) {
     fun extract(message: String, sessionId: String? = null): FlightIntent {
         val prompt = promptOrchestrator.build(FLIGHT_SEARCH_PROMPT, message, sessionId)
         return chatClient.prompt(prompt).call().entity(FlightIntent::class.java)
-            ?: error("Empty response from Mistral")
+            ?: error("Empty response from Gemini")
     }
 
     companion object {

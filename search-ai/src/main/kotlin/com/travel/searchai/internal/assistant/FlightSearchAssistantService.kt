@@ -12,12 +12,12 @@ import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.stereotype.Service
 import java.time.LocalDate
 
-// Mistral extracts free-text intent (city/airport names, a coarse relative date); airport name
+// Gemini extracts free-text intent (city/airport names, a coarse relative date); airport name
 // -> IATA code resolution stays with the existing AirportSearchService rather than trusting the
 // model to know real airport codes.
 @Service
 class FlightSearchAssistantService(
-    @Qualifier("mistralChatClient") private val chatClient: ChatClient,
+    @Qualifier("geminiChatClient") private val chatClient: ChatClient,
     private val airportSearchService: AirportSearchService,
     private val promptOrchestrator: PromptOrchestrator,
     private val validationAgent: ValidationAgent,
@@ -35,7 +35,7 @@ class FlightSearchAssistantService(
         val intent =
             runCatching { extractIntent(text, sessionId) }
                 .getOrElse {
-                    log.warn("Prompt pipeline rejected or Mistral failed: {}", it.message)
+                    log.warn("Prompt pipeline rejected or Gemini failed: {}", it.message)
                     return AssistantMessageResponse(
                         if (it is PromptInjectionDetectedException) {
                             "I can only help with flight search and booking."
@@ -46,7 +46,7 @@ class FlightSearchAssistantService(
                 }
 
         // Deterministic checks only - these are plain boolean logic over already-extracted
-        // fields (mandatory fields, same-city, date format), so no second Mistral round-trip.
+        // fields (mandatory fields, same-city, date format), so no second Gemini round-trip.
         val validation = validationAgent.validateDeterministic(intent)
         if (!validation.valid) {
             return AssistantMessageResponse(validation.reply.ifBlank { intent.reply.ifBlank { ASK_WHERE_TO_FLY } })
@@ -85,7 +85,7 @@ class FlightSearchAssistantService(
     private fun extractIntent(message: String, sessionId: String?): FlightIntent {
         val prompt = promptOrchestrator.build(FLIGHT_SEARCH_PROMPT, message, sessionId)
         return chatClient.prompt(prompt).call().entity(FlightIntent::class.java)
-            ?: error("Empty response from Mistral")
+            ?: error("Empty response from Gemini")
     }
 
     private fun normalize(value: String?): String? = value?.trim()?.takeUnless { it.isEmpty() || it.equals("null", ignoreCase = true) }
